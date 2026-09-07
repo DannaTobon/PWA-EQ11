@@ -4,7 +4,17 @@ Comiencen por `START_HERE.md` y lean `ACTIVIDAD-01.md`. Este es un proyecto acum
 
 ## Entorno
 
-Node.js 20.19 o posterior compatible, npm 10 o posterior, Git y cuenta de GitHub. No se requiere Make. Registren aquí las versiones usadas (`node --version`, `npm --version`) y cualquier dificultad de entorno que encuentren.
+Node.js 20.19 o posterior compatible, npm 10 o posterior, Git y cuenta de GitHub. No se requiere Make. 
+
+**Versiones usadas por el equipo (verificadas localmente):**
+- **Node.js:** v22.22.0
+- **npm:** 10.9.4
+- **Next.js:** 14.2.35
+- **Git:** Instalado
+- **SO:** Windows
+
+**Dificultades de entorno registradas:** 
+Ninguna bloqueante. La instalación vía `npm ci` finalizó con éxito en la primera ejecución. Solo se detectaron vulnerabilidades de dependencias originales heredadas del starter base, las cuales decidimos **no** mitigar con `npm audit fix --force` para evitar romper la compatibilidad de esta primera entrega.
 
 ## Ejecución
 
