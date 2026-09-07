@@ -61,11 +61,3 @@ Estas validaciones son para semanas posteriores; a la fecha de este documento no
 - Medir qué datos se conservan y cuáles se pierden bajo condiciones de conexión intermitente definidas por el equipo.
 
 ---
-
-## Evidencia de Tonanzin
-
-- **Commit:** `<hash del commit>` — mensaje: `<mensaje del commit>` en la rama `<rama>`. *(pendiente de completar con el commit que incluya los cambios de este documento)*
-- **Qué se hizo:** redacción de este ADR (`docs/decision-record.md`): comparación de alternativas y justificación de la decisión PWA.
-- **Qué se verificó (comprobación técnica del starter, no del análisis):** ejecuté `npm run verify` sobre una copia local del proyecto (`PWA-EQ11`). El comando corrió `test` (`starter.spec.mjs: PASS`) y `build` (`next build` con Next.js 14.2.35, compiló correctamente y generó 4 páginas estáticas sin errores). Resultado final del comando: "Verificación técnica: pass. Revisión académica: pendiente." Reporte generado en `reports/verification.json`.
-- **Nota importante:** este comando valida que el starter compila y pasa sus pruebas técnicas; **no** valida la calidad ni la corrección del análisis de este ADR. La revisión de contenido es un juicio aparte, aún pendiente.
-- **Revisión documentada:** `<enlace al PR/commit o comentario de revisión, si aplica>`.
