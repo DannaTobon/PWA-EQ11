@@ -238,3 +238,75 @@ anteriores (`## Integrante: Danna`, «## Integrante: Tonanzin» y
 encabezado propio, documenta únicamente el trabajo de la Semana 2 que consta en
 los dos commits indicados. No se mezclan puntos de Semana 2 dentro de las listas
 de Semana 1.
+
+---
+
+## Integrante: Fernando
+
+### 1. Rol / bloque individual
+
+Mi trabajo en la Semana 2 corresponde al **Bloque B**:
+
+- AppShell (estructura visual común: Header, Navegación, Main, Footer);
+- Estados de UI (Loading, Error, Empty, Success);
+- Accesibilidad (landmarks semánticos, navegación accesible, focus visible);
+- Diseño responsive adaptado a móvil y escritorio;
+- Experiencia de usuario y ruta determinista de QA.
+
+### 2. Trabajo realizado
+
+- **Creación de `AppShell` (`src/components/app-shell.tsx`):**
+  Implementé la carcasa estructural común con Header sticky, navegación accesible, contenedor principal y Footer. Conecta las rutas acordadas (`/`, `/inspections`, `/maintenance`).
+- **Integración global en `src/app/layout.tsx`:**
+  Envolví la aplicación dentro de `<AppShell>{children}</AppShell>`, combinándolo de forma limpia con los metadatos PWA (`manifest.webmanifest`) y el `viewport` configurados por Danna.
+- **Componentes de estado reutilizables (`src/components/ui/`):**
+  - `loading-state.tsx`: Spinner de carga accesible con `aria-live="polite"` y `aria-busy="true"`.
+  - `error-state.tsx`: Tarjeta de error con botón para reintentar la acción.
+  - `empty-state.tsx`: Componente visual para listas vacías o falta de datos.
+- **Archivos especiales de Next.js App Router:**
+  - `src/app/loading.tsx`: Atrapa estados de carga asíncrona renderizando `LoadingState`.
+  - `src/app/error.tsx`: Actúa como Error Boundary global renderizando `ErrorState`.
+- **Ruta de QA determinista (`src/app/test-error/page.tsx`):**
+  Creé una página de prueba con un botón que lanza un error deliberado en tiempo de render, permitiendo a Tonanzin probar y automatizar la verificación del `ErrorBoundary` de forma reproducible.
+- **Estilos del sistema de diseño nativo (`src/app/globals.css`):**
+  Diseñé todos los componentes utilizando CSS puro con las variables de diseño del proyecto (`--accent`, `--surface`, `--line`, etc.), respetando la regla de cero dependencias innecesarias y garantizando `:focus-visible` y media queries para pantallas móviles (`<=760px`).
+
+### 3. Decisiones técnicas
+
+- **Vanilla CSS sobre frameworks externos:** Para cumplir estrictamente con el alcance de Semana 2 ("No agregar dependencias innecesarias"), descarté Tailwind CSS y utilicé CSS nativo basado en las variables personalizadas del starter.
+- **Semántica web y accesibilidad:**
+  - Uso de landmarks HTML5 y ARIA: `<header role="banner">`, `<nav aria-label="Navegación principal">`, `<div role="main">`, `<footer role="contentinfo">`.
+  - Distinción estricta entre `Link` de `next/link` (para navegación entre rutas) y `<button>` (para acciones interactivas como reintentar o lanzar error).
+  - Estilos de `:focus-visible` para garantizar que la navegación por teclado sea clara y visible.
+- **Reproducibilidad determinista de errores:** En lugar de simular fallos aleatorios, la ruta `/test-error` usa un estado reactivo que lanza una excepción al pulsar el botón, lo que permite pruebas automatizadas confiables en CI.
+- **Separación de responsabilidades:** No invadí la creación de rutas ni el manifest (Bloque A de Danna) ni la configuración de Vitest/CI (Bloque C de Tonanzin).
+
+### 4. Pruebas / verificaciones realizadas
+
+- `npm test` → `starter.spec.mjs: PASS`.
+- `npm run build` → Next.js 14.2.35 compiló exitosamente generando todas las páginas estáticas: `/`, `/_not-found`, `/inspections`, `/maintenance`, `/test-error`.
+- `npm run verify` → `Verificación técnica: pass`. Se generó correctamente `reports/verification.json`.
+- Validación manual en navegador en `http://localhost:3000`:
+  - Navegación fluida entre `/`, `/inspections` y `/maintenance` dentro del `AppShell`.
+  - En `/test-error`, ejecución del botón para confirmar la captura de error por el `ErrorBoundary`.
+  - Comprobación del responsive y del indicador visual de foco con la tecla `Tab`.
+
+### 5. Limitaciones / alcance
+
+- Los estados de datos (Empty / Success) actualmente se representan con datos sintéticos locales; no se conectó ninguna API ni base de datos real.
+- Las pruebas automatizadas en Vitest y la configuración de GitHub Actions corresponden al Bloque C de Tonanzin.
+
+### 6. Uso de IA
+
+Se utilizó Antigravity IDE (Gemini / Claude) como asistente de desarrollo para:
+- Analizar los requerimientos del Bloque B y la estructura de componentes recomendada para Next.js App Router.
+- Diseñar la estructura semántica accesible de `app-shell.tsx` y los componentes de UI.
+- Generar las clases CSS nativas armonizadas con `globals.css`.
+- Integrar la rama `main` tras el merge del PR de Danna sin conflictos.
+
+Todas las decisiones de diseño, accesibilidad, rutas y verificación fueron revisadas, probadas y validadas directamente por el integrante.
+
+### 7. Commits de Semana 2
+
+- `20f81e8` — `feat(ui): implement AppShell, UI states, and accessible navigation`
+- Commit de integración con `main` y evidencia individual.
