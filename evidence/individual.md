@@ -98,3 +98,143 @@
   Existen 2 vulnerabilidades de alta severidad reportadas por npm audit en el starter; decidimos no forzar una actualización (`npm audit fix --force`) para no alterar el starter base ni romper compatibilidad sin previo análisis.
 - **Uso de IA: herramienta, propósito, partes influenciadas y validación propia (o «no utilicé IA»):** 
   Utilicé Antigravity (Gemini/Claude) como asistente técnico dentro de mi IDE para leer el entorno, analizar los requisitos de la ACTIVIDAD-01 y generar la plantilla estructural de los documentos. Verifiqué que cada sección cumpla estrictamente con la rúbrica y no implemente funciones futuras no requeridas (como offline o manifiesto).
+
+---
+
+# Evidencia individual — Semana 2
+
+## Integrante: Danna
+
+### 1. Rol / bloque individual
+
+Mi trabajo en la Semana 2 corresponde al **Bloque A**:
+
+- PWA / manifest;
+- iconos;
+- metadata y viewport;
+- estructura inicial de rutas.
+
+El equipo quedó organizado en tres bloques con separación de responsabilidades:
+Danna (Bloque A), Fernando (Bloque B: AppShell, UI, estados, accesibilidad,
+responsive) y Tonanzin (Bloque C: Vitest, tests, CI, GitHub Actions, calidad).
+
+### 2. Trabajo realizado
+
+**Etapa 1 — manifest, iconos, metadata y viewport**
+
+- Creación de `public/manifest.webmanifest` con los valores aprobados: `name`
+  «Inspecciones de laboratorio», `short_name` «Inspecciones», `description`,
+  `start_url` `/`, `scope` `/`, `display` `standalone`, `background_color`
+  `#f4f7fb`, `theme_color` `#3156d3`, `lang` `es-MX`, `dir` `ltr`, e `icons`
+  con `icon-192x192.png` y `icon-512x512.png`.
+- Creación de los iconos locales `public/icon-192x192.png` y
+  `public/icon-512x512.png` (PNG reales, 192×192 y 512×512, generados mediante
+  un script Python local con la biblioteca estándar; sin recursos externos ni
+  dependencias nuevas).
+- Integración del manifest en `src/app/layout.tsx` mediante la API `metadata`
+  de Next.js (`manifest: "/manifest.webmanifest"`).
+- Configuración del `viewport` con `width: "device-width"`, `initialScale: 1` y
+  `themeColor: "#3156d3"` mediante el export `viewport` de Next.js.
+- Se conservó `<body>{children}</body>` sin envolverlo para permitir que
+  Fernando integre posteriormente `<AppShell>{children}</AppShell>` sin rehacer
+  el trabajo.
+
+**Etapa 2 — estructura inicial de rutas**
+
+- Transformación de `src/app/page.tsx` en una página de bienvenida: presenta el
+  propósito de la aplicación y navega hacia `/inspections` y `/maintenance`
+  mediante `Link` de `next/link`.
+- Creación de la ruta `/inspections` (`src/app/inspections/page.tsx`) con el
+  listado de inspecciones y `metadata.title`.
+- Creación de la ruta `/maintenance` (`src/app/maintenance/page.tsx`) como
+  página base de la sección de mantenimiento, sin API, persistencia ni
+  funcionalidad futura, con `metadata.title`.
+- Reutilización de `src/lib/data/inspections.ts` sin duplicar los datos
+  sintéticos.
+- Eliminación en la interfaz de referencias académicas de la Semana 1
+  (p. ej. «Proyecto base · Semana 1», «PWA aún no implementada»); la aplicación
+  se ve como una aplicación real. No se borró documentación ni evidencia de la
+  Semana 1.
+
+### 3. Decisiones técnicas
+
+- Uso del **App Router** de Next.js para las rutas reales `/`, `/inspections` y
+  `/maintenance`.
+- Navegación interna con `Link` de `next/link` (rutas reales), sin `div` +
+  `onClick`, sin `window.location` ni botones simulando navegación.
+- Reutilización de la fuente de datos sintéticos existente
+  (`@/lib/data/inspections`) en lugar de duplicar los datos.
+- Manifest integrado mediante la API de `metadata` de Next.js (no un `<link>`
+  manual).
+- Iconos PNG locales generados sin dependencias nuevas y sin descargas
+  externas.
+- Separación de responsabilidades entre los bloques A, B y C. **No** se
+  atribuyen a mi bloque: AppShell, estados loading/error/empty/success, Vitest,
+  `tests/manifest.spec.ts`, CI ni GitHub Actions (corresponden a Fernando y
+  Tonanzin y todavía no forman parte de mi trabajo documentado en estos
+  commits).
+
+### 4. Pruebas / verificaciones realizadas
+
+**Etapa 1**
+
+- Validación del JSON de `public/manifest.webmanifest` (parseo correcto y
+  coincidencia de todos los campos aprobados).
+- Validación de la firma PNG (bytes `89 50 4E 47 0D 0A 1A 0A`) en ambos iconos.
+- Verificación de las dimensiones exactas 192×192 y 512×512 (chunk IHDR).
+- Decodificación completa de ambos PNG (descompresión del IDAT con `zlib` sin
+  errores).
+- Revisión de `src/app/layout.tsx`: manifest y viewport configurados sin
+  alterar `<body>{children}</body>`.
+
+**Etapa 2**
+
+- `tsc --noEmit` → exit 0 (con el TypeScript ya instalado, sin instalar nada).
+- `npm run build` → exit 0; Next.js compiló y registró las rutas estáticas:
+  `/`, `/inspections`, `/maintenance`.
+- Confirmación de que `/inspections` importa directamente desde
+  `@/lib/data/inspections` (import `@/lib/data/inspections`), sin duplicación
+  de datos.
+
+Nota: **`npm ci` todavía no se ha ejecutado** en esta etapa del trabajo; la
+distribución de la rama aún no se ha probado en un entorno limpio.
+
+### 5. Limitaciones / alcance
+
+- Los datos siguen siendo exclusivamente sintéticos.
+- No hay API, fetching, persistencia ni service worker (no corresponden a esta
+  etapa del Bloque A).
+- Los estados de UI (loading/error/empty/success) corresponden al trabajo
+  posterior de Fernando.
+- Los tests (`tests/manifest.spec.ts`) y el CI corresponden al Bloque C.
+- AppShell todavía será integrado por Fernando; el layout quedó preparado para
+  ello. Estas no son fallas: forman parte del alcance acordado entre los
+  bloques.
+
+### 6. Uso de IA
+
+Se utilizó OpenCode/IA como apoyo para:
+
+- analizar la estructura existente del proyecto;
+- proponer y realizar los cambios dentro del alcance del Bloque A;
+- generar los iconos mediante un script local (Python stdlib);
+- revisar y verificar los cambios (JSON, PNG, build, rutas);
+- ayudar a mantener la separación entre bloques A, B y C.
+
+Las decisiones de alcance, rutas, responsabilidades, diseño, revisión de
+cambios y aprobación de commits fueron supervisadas/validadas por el
+integrante. La IA no realizó trabajo de otros integrantes.
+
+### 7. Commits de Semana 2
+
+- `a4ded758ccc65af1f9de3c8152de5ab402fc46fe` — `feat(pwa): add manifest, icons and viewport metadata`
+- `b56d942dd1c22a8cf0a7b167f74009cbeef26d93` — `feat(routes): add inspections and maintenance routes`
+
+### 8. Separación Semana 1 / Semana 2
+
+La evidencia de la Semana 1 se conserva íntegramente en las secciones
+anteriores (`## Integrante: Danna`, «## Integrante: Tonanzin» y
+«## Integrante: Fernando»). Esta sección, separada por una línea divisoria con
+encabezado propio, documenta únicamente el trabajo de la Semana 2 que consta en
+los dos commits indicados. No se mezclan puntos de Semana 2 dentro de las listas
+de Semana 1.
