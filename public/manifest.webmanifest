@@ -1,0 +1,24 @@
+{
+  "name": "Inspecciones de laboratorio",
+  "short_name": "Inspecciones",
+  "description": "Registro de mantenimiento para trabajar con conectividad intermitente",
+  "start_url": "/",
+  "scope": "/",
+  "display": "standalone",
+  "background_color": "#f4f7fb",
+  "theme_color": "#3156d3",
+  "lang": "es-MX",
+  "dir": "ltr",
+  "icons": [
+    {
+      "src": "/icon-192x192.png",
+      "sizes": "192x192",
+      "type": "image/png"
+    },
+    {
+      "src": "/icon-512x512.png",
+      "sizes": "512x512",
+      "type": "image/png"
+    }
+  ]
+}
