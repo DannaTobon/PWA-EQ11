@@ -255,21 +255,33 @@ Mi trabajo en la Semana 2 corresponde al **Bloque B**:
 
 ### 2. Trabajo realizado
 
-- **Creación de `AppShell` (`src/components/app-shell.tsx`):**
-  Implementé la carcasa estructural común con Header sticky, navegación accesible, contenedor principal y Footer. Conecta las rutas acordadas (`/`, `/inspections`, `/maintenance`).
-- **Integración global en `src/app/layout.tsx`:**
-  Envolví la aplicación dentro de `<AppShell>{children}</AppShell>`, combinándolo de forma limpia con los metadatos PWA (`manifest.webmanifest`) y el `viewport` configurados por Danna.
-- **Componentes de estado reutilizables (`src/components/ui/`):**
-  - `loading-state.tsx`: Spinner de carga accesible con `aria-live="polite"` y `aria-busy="true"`.
-  - `error-state.tsx`: Tarjeta de error con botón para reintentar la acción.
-  - `empty-state.tsx`: Componente visual para listas vacías o falta de datos.
-- **Archivos especiales de Next.js App Router:**
-  - `src/app/loading.tsx`: Atrapa estados de carga asíncrona renderizando `LoadingState`.
-  - `src/app/error.tsx`: Actúa como Error Boundary global renderizando `ErrorState`.
-- **Ruta de QA determinista (`src/app/test-error/page.tsx`):**
-  Creé una página de prueba con un botón que lanza un error deliberado en tiempo de render, permitiendo a Tonanzin probar y automatizar la verificación del `ErrorBoundary` de forma reproducible.
-- **Estilos del sistema de diseño nativo (`src/app/globals.css`):**
-  Diseñé todos los componentes utilizando CSS puro con las variables de diseño del proyecto (`--accent`, `--surface`, `--line`, etc.), respetando la regla de cero dependencias innecesarias y garantizando `:focus-visible` y media queries para pantallas móviles (`<=760px`).
+**Etapa 1 — Estructura global y AppShell**
+- **Creación del componente `AppShell` (`src/components/app-shell.tsx`):** 
+  Se desarrolló la carcasa estructural común de la aplicación. Esta incluye un **Header sticky** persistente en la parte superior para asegurar el acceso rápido a la navegación en todo momento, una sección principal fluida (`<main>`) que aloja el contenido dinámico de cada ruta, y un **Footer** informativo.
+- **Navegación accesible y semántica:** 
+  Dentro del `AppShell`, se implementó una barra de navegación que enlaza las rutas base del sistema (`/` Inicio, `/inspections` Inspecciones, `/maintenance` Mantenimiento). Se utilizaron etiquetas semánticas de HTML5 (`<header>`, `<nav>`, `<main>`, `<footer>`) y atributos ARIA (`aria-label`) para cumplir con los estándares de accesibilidad requeridos para lectores de pantalla.
+- **Integración global transparente (`src/app/layout.tsx`):** 
+  Se inyectó el componente `<AppShell>` como envoltorio principal dentro del layout raíz de Next.js (`layout.tsx`). El trabajo se coordinó cuidadosamente para no sobrescribir ni entrar en conflicto con la configuración del `viewport` y los metadatos PWA (`manifest.webmanifest`) previamente configurados por el Bloque A (Danna).
+
+**Etapa 2 — Sistema de Diseño y Estilos Nativos**
+- **Ampliación de variables CSS (`src/app/globals.css`):** 
+  Se amplió el sistema de diseño basado en variables CSS (`--accent`, `--surface`, `--text-main`, `--line`, etc.) para dar soporte a los nuevos componentes.
+- **Estilización sin dependencias (Vanilla CSS):** 
+  Cumpliendo estrictamente con la restricción de "cero dependencias innecesarias", todo el diseño visual fue construido usando Vanilla CSS en lugar de frameworks externos. Se garantizaron prácticas modernas como el uso de `flexbox` para el posicionamiento, sombras suaves para la jerarquía visual y transiciones para interacciones.
+- **Diseño Responsive y Accesibilidad Visual:** 
+  Se incluyeron _media queries_ para adaptar la navegación a dispositivos móviles (`<=760px`), permitiendo que el diseño se ajuste fluidamente en pantallas pequeñas. Además, se definieron estilos explícitos para `:focus-visible` en todos los elementos interactivos, asegurando la navegabilidad por teclado.
+
+**Etapa 3 — Estados de Interfaz de Usuario (UI States)**
+- **Manejo de Carga (`loading-state.tsx` y `src/app/loading.tsx`):** 
+  Se creó un componente reutilizable de carga (`LoadingState`) con un spinner animado por CSS. Este componente fue integrado nativamente con Next.js App Router mediante `loading.tsx`, permitiendo que las transiciones entre páginas muestren retroalimentación inmediata, mejorando la percepción de rendimiento. Se incluyeron atributos `aria-live="polite"` y `aria-busy="true"`.
+- **Manejo de Errores (`error-state.tsx` y `src/app/error.tsx`):** 
+  Se implementó un componente `ErrorState` que presenta una tarjeta amigable cuando algo falla. Este fue envuelto en un _Error Boundary_ global de Next.js (`error.tsx`), interceptando fallos en tiempo de ejecución. Incluye un botón para que el usuario pueda reintentar la acción (`reset()`).
+- **Estado Vacío (`empty-state.tsx`):** 
+  Se desarrolló un componente ilustrativo para representar estados donde no hay datos (p. ej., lista de inspecciones vacía), proporcionando un mensaje claro al usuario en lugar de una pantalla en blanco.
+
+**Etapa 4 — Ruta determinista para QA**
+- **Página de Prueba de Error (`src/app/test-error/page.tsx`):** 
+  Para apoyar al Bloque C (Tonanzin) en las pruebas automatizadas (Vitest) y verificación del _Error Boundary_, desarrollé una ruta específica de QA (`/test-error`). Esta página expone un botón que lanza una excepción deliberada en tiempo de render, ofreciendo una forma determinista y controlada de reproducir errores sin depender de fallos intermitentes de red o servidor.
 
 ### 3. Decisiones técnicas
 
