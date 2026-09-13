@@ -354,7 +354,7 @@ compartido) los revisé y definí yo antes de aceptar el resultado.
 
 ### 7. Commits de Semana 2
 
-- `<completar con el hash real después de hacer commit>` — `test: configurar
+- `dba8e7f56d2f6093197ddb099dc1ec6d854e1680` — `test: configurar
   Vitest, tests de manifest y comportamiento de UI, workflow CI semana 2`
 
 ### 8. Separación Semana 1 / Semana 2
