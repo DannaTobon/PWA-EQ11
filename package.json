@@ -7,6 +7,7 @@
     "build": "next build",
     "start": "next start",
     "test": "node tests/starter.spec.mjs",
+    "test:manifest": "vitest run --reporter=default --reporter=json --outputFile=vitest-report.json",
     "verify": "node scripts/verify.mjs"
   },
   "dependencies": {
@@ -15,9 +16,17 @@
     "react-dom": "18.3.1"
   },
   "devDependencies": {
+    "@testing-library/dom": "^10.4.1",
+    "@testing-library/jest-dom": "^6.6.3",
+    "@testing-library/react": "^16.3.3",
     "@types/node": "^20.14.15",
     "@types/react": "^18.3.3",
     "@types/react-dom": "^18.3.0",
-    "typescript": "^5.4.5"
-  }
+    "@vitejs/plugin-react": "^4.3.4",
+    "jsdom": "^25.0.1",
+    "typescript": "^5.4.5",
+    "vite": "^5.4.11",
+    "vitest": "^3.2.4"
+  },
+  "test:manifest": "vitest run"
 }
