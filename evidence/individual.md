@@ -238,3 +238,127 @@ anteriores (`## Integrante: Danna`, «## Integrante: Tonanzin» y
 encabezado propio, documenta únicamente el trabajo de la Semana 2 que consta en
 los dos commits indicados. No se mezclan puntos de Semana 2 dentro de las listas
 de Semana 1.
+
+## Integrante: Tonanzin
+
+### 1. Rol / bloque individual
+
+Mi trabajo en la Semana 2 corresponde al **Bloque C**:
+
+- configuración de Vitest;
+- `tests/manifest.spec.ts` (pruebas del manifest PWA);
+- pruebas de comportamiento crítico de UI (`AppShell` y los 4 estados);
+- workflow de GitHub Actions de Semana 2;
+- coordinación de la validación final del equipo.
+
+### 2. Trabajo realizado
+
+**Configuración de Vitest**
+
+- Instalación de Vitest y configuración en `vitest.config.mts`: entorno
+  `jsdom`, alias `@/*` apuntando a `src/`, plugin `@vitejs/plugin-react` (para
+  transformar JSX, ya que `tsconfig.json` usa `jsx: "preserve"`, pensado para
+  el compilador de Next.js y no para Vite), y `tests/setup.ts` con
+  `@testing-library/jest-dom` y limpieza automática (`cleanup`) entre pruebas.
+- Se agregó el script `test:manifest` en `package.json` (independiente del
+  script `test` existente, que sigue corriendo `tests/starter.spec.mjs` de la
+  Semana 1) para no romper la validación de mis compañeros.
+
+**`tests/manifest.spec.ts` (6 pruebas)**
+
+Contra `public/manifest.webmanifest` de Danna: existencia del archivo, JSON
+válido, `name`/`short_name` no vacíos, `display` = `standalone`, `start_url` y
+`scope` como rutas válidas, e íconos 192×192 y 512×512 presentes con
+`type: image/png` y archivo real en `public/`.
+
+**Pruebas de comportamiento de UI (13 pruebas)**
+
+- `tests/app-shell.spec.tsx` (4 pruebas): landmarks de accesibilidad
+  (`banner`, `navigation`, `main`, `contentinfo`), contenido (`children`)
+  dentro del landmark `main`, links de navegación a `/inspections` y
+  `/maintenance` con su `href` correcto, y el link de marca hacia `/`.
+- `tests/ui-states.spec.tsx` (9 pruebas): `LoadingState` (`role="status"` con
+  etiqueta, `aria-live`/`aria-busy`, mensaje visible), `ErrorState`
+  (`role="alert"`, mensaje de error entendible, invocación de `reset()` al
+  hacer clic en "Reintentar"), y `EmptyState` (título y descripción por
+  props, acción opcional renderizada, y que no falle sin `icon` ni `action`).
+
+Estas pruebas se escribieron y validaron contra el contenido real de los
+archivos del Bloque B (`app-shell.tsx`, `loading-state.tsx`, `error-state.tsx`,
+`empty-state.tsx`) tomados temporalmente de la rama `feature/app-shell-ui` de
+Fernando (aún no fusionada a `main` al momento de este commit) solo para
+confirmar que las 19 pruebas pasan en verde; esos archivos **no** se
+incluyeron en mi commit, ya que pertenecen a su bloque y su PR.
+
+**Workflow de CI (Semana 2)**
+
+- `.github/workflows/week-02-feedback.yml`: en cada push/PR, instala con
+  `npm ci`, corre `npm run test:manifest` (Vitest) y `npm run build`, y sube
+  el reporte JSON de Vitest como artefacto.
+
+### 3. Decisiones técnicas
+
+- **Downgrade deliberado de versiones**: instalé inicialmente `vitest@5`,
+  `jsdom@30` y `@testing-library/jest-dom@7`, pero esas versiones requieren
+  Node.js ≥22. Mi máquina (y el CI, configurado con Node `20.19.6`, igual que
+  el workflow de Semana 1) usa Node 20, así que downgradeé a `vitest@^3.2.4`,
+  `jsdom@^25.0.1`, `@testing-library/jest-dom@^6.6.3`,
+  `@vitejs/plugin-react@^4.3.4` y `vite@^5.4.11` — todas con soporte
+  explícito para Node 20, evitando forzar una actualización de Node en las
+  máquinas de mis compañeros.
+- Entorno de pruebas `jsdom` (no `node`) para poder renderizar componentes
+  React con `@testing-library/react`.
+- Script `test:manifest` separado del script `test` existente, para no
+  interferir con `tests/starter.spec.mjs` de la Semana 1 sin acuerdo previo
+  del equipo.
+- Instalación con `--legacy-peer-deps` por un conflicto de peer dependencies
+  entre `vitest` y la versión de `@types/node` ya fijada en el proyecto
+  (`^20.14.15`); no se tocó `@types/node` para no afectar la configuración de
+  TypeScript compartida.
+
+### 4. Pruebas / verificaciones realizadas
+
+- `npm run test:manifest` → 3 archivos de prueba, **19/19 pruebas en verde**
+  (6 de manifest + 4 de AppShell + 9 de estados de UI).
+- `npm run build` → exit 0, compiló y generó las 4 rutas estáticas sin
+  errores, después de todos los cambios de configuración y dependencias.
+- Verifiqué manualmente que ningún paquete del árbol de dependencias (`npm
+  ls`) quedara en estado `invalid` o requiriera Node ≥22.
+
+### 5. Limitaciones / alcance
+
+- Las pruebas de `tests/app-shell.spec.tsx` y `tests/ui-states.spec.tsx`
+  **fallarán con "módulo no encontrado"** en cualquier copia limpia de
+  `main` hasta que se fusione el PR de Fernando (`feature/app-shell-ui`): es
+  una dependencia esperada del Bloque C sobre el Bloque B, no un error de mi
+  configuración.
+- No se implementaron pruebas de integración de rutas completas
+  (`/inspections`, `/maintenance`) ni pruebas end-to-end; el alcance acordado
+  para el Bloque C esta semana es manifest + comportamiento de componentes
+  aislados.
+- El estado `EmptyState` no está conectado todavía a ninguna página real
+  (ni `/inspections` ni `/maintenance` lo usan), así que solo se probó el
+  componente de forma aislada, no en contexto de una lista vacía real.
+
+### 6. Uso de IA
+
+Utilicé Claude (Anthropic) como apoyo para configurar Vitest y Testing
+Library, diagnosticar y resolver los conflictos de versiones con Node 20
+(incluyendo la causa raíz del error `webidl.util.markAsUncloneable is not a
+function), y redactar el esqueleto inicial de `tests/manifest.spec.ts`,
+`tests/app-shell.spec.tsx` y `tests/ui-states.spec.tsx`. Las pruebas se
+ejecutaron y validaron en verde antes de incluirlas en el commit; la decisión
+de qué comportamiento probar (landmarks, estados, accesibilidad) y el ajuste
+de versiones a las restricciones reales del proyecto (Node 20, script `test`
+compartido) los revisé y definí yo antes de aceptar el resultado.
+
+### 7. Commits de Semana 2
+
+- `<completar con el hash real después de hacer commit>` — `test: configurar
+  Vitest, tests de manifest y comportamiento de UI, workflow CI semana 2`
+
+### 8. Separación Semana 1 / Semana 2
+
+La evidencia de la Semana 1 se conserva íntegramente en la sección
+`## Integrante: Tonanzin` anterior (ADR-001 / decision-record.md). Esta
+sección documenta únicamente el trabajo del Bloque C de Semana 2.
