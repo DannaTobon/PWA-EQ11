@@ -1,0 +1,100 @@
+<!DOCTYPE html>
+<html lang="es-MX">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>Sin conexión · Inspecciones de laboratorio</title>
+  <style>
+    :root {
+      --ink: #172033;
+      --muted: #64708a;
+      --surface: #ffffff;
+      --background: #f4f7fb;
+      --accent: #3156d3;
+      --accent-soft: #e9edff;
+    }
+    * { box-sizing: border-box; }
+    html { background: var(--background); }
+    body {
+      margin: 0;
+      color: var(--ink);
+      background: var(--background);
+      font-family: Arial, Helvetica, sans-serif;
+      line-height: 1.6;
+    }
+    .fallback {
+      min-height: 100vh;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      justify-content: center;
+      padding: 24px;
+    }
+    .card {
+      max-width: 520px;
+      width: 100%;
+      background: var(--surface);
+      border: 1px solid #dce3ef;
+      border-radius: 12px;
+      padding: 40px 32px;
+      text-align: center;
+      box-shadow: 0 4px 12px rgba(23, 32, 51, 0.08);
+    }
+    .badge {
+      display: inline-block;
+      background: var(--accent-soft);
+      color: var(--accent);
+      font-size: 13px;
+      font-weight: 600;
+      letter-spacing: 0.04em;
+      text-transform: uppercase;
+      border-radius: 999px;
+      padding: 4px 12px;
+      margin-bottom: 16px;
+    }
+    h1 {
+      margin: 0 0 12px;
+      font-size: 1.5rem;
+      line-height: 1.25;
+    }
+    p {
+      margin: 0 0 20px;
+      color: var(--muted);
+    }
+    .retry {
+      display: inline-block;
+      background: var(--accent);
+      color: #ffffff;
+      text-decoration: none;
+      font-weight: 600;
+      border-radius: 8px;
+      padding: 12px 20px;
+    }
+    .retry:focus-visible {
+      outline: 3px solid var(--accent);
+      outline-offset: 2px;
+    }
+    .hint {
+      margin-top: 20px;
+      font-size: 13px;
+    }
+  </style>
+</head>
+<body>
+  <main class="fallback" role="main">
+    <div class="card">
+      <span class="badge">Sin conexión</span>
+      <h1>Inspecciones de laboratorio</h1>
+      <p>
+        No hay conexión a Internet en este momento, por lo que no se pudo cargar
+        la página solicitada.
+      </p>
+      <a class="retry" href="/">Reintentar</a>
+      <p class="hint">
+        Cuando la conexión se restablezca, podrás volver a consultar las
+        inspecciones y el mantenimiento de los laboratorios.
+      </p>
+    </div>
+  </main>
+</body>
+</html>
