@@ -6,7 +6,7 @@
     "dev": "next dev",
     "build": "next build",
     "start": "next start",
-    "test": "node tests/starter.spec.mjs",
+    "test": "node tests/starter.spec.mjs && vitest run",
     "test:manifest": "vitest run --reporter=default --reporter=json --outputFile=vitest-report.json",
     "verify": "node scripts/verify.mjs"
   },
@@ -28,5 +28,7 @@
     "vite": "^5.4.11",
     "vitest": "^3.2.4"
   },
-  "test:manifest": "vitest run"
+  "engines": {
+    "node": ">=20.19.0"
+  }
 }

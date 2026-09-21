@@ -1,5 +1,4 @@
-# Check público de estructura
+# Public tests: w03-service-worker-offline
 
-Desde la raíz del proyecto: `bash public-tests/check.sh` o, sin Bash, `node scripts/verify.mjs --structure`. Solo comprueba archivos requeridos. No califica documentos ni detecta secretos.
+Ejecuta `bash public-tests/check.sh` desde la raíz del repositorio. Estos checks comprueban el contrato mínimo sin revelar los casos privados.
 
-Para prueba y build usen `npm run verify`; produce `reports/verification.json`. La calidad del contenido se revisa con la rúbrica.
