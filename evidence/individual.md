@@ -708,4 +708,4 @@ Herramienta: Claude (Anthropic). Propósito: revisar el contenido del repositori
 
 ### 8. Commits de Semana 3
 
-- Commit de documentación, checklist y configuración de CI de Semana 3.
+- [COMPLETAR: `c8fed82db2824ef7f182ac4b8a210f9ffcb4d3c9`] — docs: README, evidencia, checklist de integracion y workflow del kit de Semana 3
