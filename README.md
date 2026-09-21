@@ -23,7 +23,14 @@ npm ci
 npm run dev
 ```
 
-Abran `http://localhost:3000` y comprueben las tres inspecciones sintéticas. Detengan el servidor con Ctrl+C.
+Abran `http://localhost:3000` y comprueben las tres inspecciones sintéticas. 
+
+Para comprobar el **comportamiento offline** (Semana 3):
+1. Asegúrense de usar `npm run build` y `npm run start` en lugar de `dev` (para simular el entorno real).
+2. Abran la aplicación y confirmen que el Service Worker se instaló (DevTools -> Application -> Service Workers).
+3. Activen el modo Offline en la pestaña Network de DevTools.
+4. Recarguen la página y naveguen. Comprobarán que se sirve desde caché y muestra la página de fallback si es necesario.
+5. Detengan el servidor con Ctrl+C.
 
 ## Verificación
 
@@ -47,4 +54,4 @@ Inviten a los integrantes y al docente al mismo repositorio privado. Cada person
 - `evidence/`: evidencia propia de cada integrante.
 - `tests/`: prueba inicial proporcionada; no es una suite completa de comportamiento.
 
-Registren aquí sus supuestos y limitaciones de ejecución. El starter todavía no implementa instalación PWA, offline ni sincronización. No incluyan datos personales reales en el producto, archivos `.env` ni credenciales. La identificación de integrantes se conserva en el repositorio privado y Classroom.
+Registren aquí sus supuestos y limitaciones de ejecución. El starter todavía no implementa instalación PWA avanzada ni sincronización bidireccional, aunque **sí cuenta con Service Worker y fallback offline**. No incluyan datos personales reales en el producto, archivos `.env` ni credenciales. La identificación de integrantes se conserva en el repositorio privado y Classroom.

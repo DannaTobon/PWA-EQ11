@@ -602,3 +602,63 @@ offline y registro) que consta en los seis commits indicados. La única
 interacción con archivos de semanas previas es la integración de
 `<ServiceWorkerRegister />` en `src/app/layout.tsx` (archivo compartido con
 Fernando), realizada junto a `<AppShell>` y sin alterar el trabajo previo.
+
+---
+
+## Integrante: Fernando
+
+### 1. Rol / bloque individual
+
+Mi trabajo en la Semana 3 corresponde a la **Verificación, Integración y Pruebas CI**:
+
+- Integración de los cambios de Danna (`feat/week3-danna-service-worker`) a la rama `main`.
+- Actualización del script de verificación (`scripts/verify.mjs`) para requerir los nuevos artefactos.
+- Configuración de `package.json` para ejecutar todas las pruebas consolidadas.
+- Creación del workflow de CI en GitHub Actions para validar la Semana 3.
+- Actualización de `README.md` con las instrucciones de prueba manual del comportamiento offline.
+- Resolución de conflictos y limpieza en `evidence/individual.md`.
+- Pruebas automatizadas y manuales de integración de la aplicación con Service Worker.
+
+### 2. Trabajo realizado
+
+**Etapa 1 — Integración y Actualización de Verificaciones**
+
+- Ejecuté el _merge_ limpio (Fast-forward) de la rama de Danna a `main`.
+- Actualicé `scripts/verify.mjs` agregando a la lista estricta `required` todos los archivos producidos esta semana: `docs/cache-strategy.md`, `tests/service-worker.spec.ts`, `tests/offline.spec.ts`, `public/sw.js` y `src/lib/pwa/register-service-worker.ts`.
+- Añadí al bucle de verificación de `verify.mjs` un paso adicional para correr las pruebas de Vitest directamente (`npm run test:manifest`), garantizando que la PWA y SW se testean durante el ciclo `npm run verify`.
+- Actualicé `package.json` para agregar un script consolidado (`test:all`).
+
+**Etapa 2 — CI/CD Workflow Semana 3**
+
+- Creé el archivo `.github/workflows/week-03-w03-service-worker-offline.yml`, con acciones configuradas para Node 20.19.6, uso de `npm ci` para estabilidad, y ejecución de pruebas y builds obligatorios de la semana.
+
+**Etapa 3 — Documentación y Limpieza**
+
+- Limpié los restos de marcadores de conflictos y código duplicado en `evidence/individual.md` provenientes de una mala resolución de merge.
+- Agregué una guía rápida a `README.md` sobre cómo simular el entorno real (usando `npm run build && npm run start` en vez de `dev`) y cómo validar las cachés usando DevTools para la revisión de offline.
+
+### 3. Decisiones técnicas
+
+- **Integración directa del código de Danna en Vitest**: Aunque inicialmente mi rol asignaba las pruebas de `tests/offline.spec.ts`, Danna entregó un arnés de pruebas muy robusto. Validé esos tests y los adopté sin modificarlos, pues su cobertura garantiza el contrato exigido. Me centré entonces en orquestar el CI.
+- **Mantener dos runners en Verify**: `test` (jest/node base para validación estructural) y `test:manifest` (vitest para SW y componentes) operan de forma independiente para prevenir un acople falso.
+
+### 4. Pruebas / verificaciones realizadas
+
+- `npm run verify` → Pass completo (estructura validada y Vitest corriendo 57/57 pruebas en verde).
+- Ejecución local del build `npm run build && npm run start`.
+- Activación de modo offline en MS Edge y comprobación del renderizado desde caché y del fallback en la pantalla principal.
+
+### 5. Limitaciones / alcance
+
+- No hubo modificaciones al comportamiento base del PWA, solo comprobación estricta de la integración.
+
+### 6. Uso de IA
+
+Utilicé Antigravity como asistente técnico para:
+- Revisar y planificar el orden del merge, garantizando que no existiera pérdida de los trabajos del Bloque B y C.
+- Modificar de manera limpia el arreglo `required` en `verify.mjs` y estructurar el archivo YML de Actions.
+
+### 7. Commits de Semana 3
+
+- Commit de merge y consolidación de CI y scripts.
+

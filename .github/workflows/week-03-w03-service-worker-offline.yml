@@ -1,0 +1,43 @@
+name: Semana 3 — tests y build
+on:
+  push:
+  pull_request:
+  workflow_dispatch:
+permissions:
+  contents: read
+jobs:
+  verify:
+    runs-on: ubuntu-latest
+    timeout-minutes: 20
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '20.19.6'
+          cache: npm
+
+      - name: Instalación reproducible
+        run: npm ci --no-audit --no-fund
+
+      - name: Tests iniciales (starter)
+        run: npm test
+
+      - name: Tests de SW, offline y UI (Vitest)
+        run: npm run test:manifest
+
+      - name: Build de producción
+        run: npm run build
+
+      - name: Verificación final
+        run: npm run verify
+
+      - name: Guardar resultado de Vitest y Verificación
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: pwa-eq11-week-03-evidence
+          if-no-files-found: warn
+          path: |
+            vitest-report.json
+            reports/verification.json
