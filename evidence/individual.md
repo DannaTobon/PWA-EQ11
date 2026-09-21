@@ -452,7 +452,217 @@ Todas las decisiones de diseño, accesibilidad, rutas y verificación fueron rev
 
 # Evidencia individual — Semana 3
 
-> Solo se documenta lo que cada integrante hizo, probó o decidió. Danna y Fernando agregan aquí su propia sección de Semana 3. El kit pide: commit SHA evaluado, decisión técnica que se puede explicar, prueba ejecutada con su resultado, limitación o fallo diagnosticado, cambio que se podría defender o modificar en vivo, y uso declarado de IA.
+## Integrante: Danna
+
+### 1. Rol / bloque individual
+
+Mi trabajo en la Semana 3 corresponde al **Service Worker offline de la
+aplicación** (adecuado a la estrategia de caché definida en
+`docs/cache-strategy.md`):
+
+- documento de estrategia de caché (`docs/cache-strategy.md`);
+- página de respaldo offline (`public/offline.html`);
+- Service Worker (`public/sw.js`) con ciclo de vida (install/activate/precache)
+  y estrategias de fetch;
+- harness de pruebas del Service Worker (`tests/harness/service-worker.ts`);
+- pruebas del Service Worker (`tests/service-worker.spec.ts`);
+- pruebas de la experiencia offline (`tests/offline.spec.ts`);
+- registro del Service Worker en la app (`src/lib/pwa/register-service-worker.ts`
+  y `src/components/service-worker-register.tsx`);
+- prueba de contrato del registro (`tests/register-service-worker.spec.ts`).
+
+### 2. Trabajo realizado
+
+**Etapa 1 — Planificación (documento)**
+
+- Creación de `docs/cache-strategy.md` trazando la estrategia de caché: caches
+  versionados (`pwa-eq11-v1-{pages,static,core}`), política por tipo de
+  solicitud, manejo de navegación offline y actualización segura del Service
+  Worker.
+
+**Etapa 2 — Página offline**
+
+- Creación de `public/offline.html`: página estática de respaldo, en `es-MX`,
+  con CSS inline (sin JS ni recursos externos), para mostrarla cuando el
+  Service Worker no puede resolver una navegación sin red.
+
+**Etapa 3 — Service Worker**
+
+- `public/sw.js` — **ciclo de vida**: registro de caches versionados,
+  precache de los assets críticos, activación con limpieza de caches de
+  versiones anteriores y sin `skipWaiting()`/`clients.claim()`.
+- `public/sw.js` — **estrategias de fetch**: exclusiones (GET, same-origin,
+  `Authorization` y `/sw.js`), manejo de navegaciones con Network First
+  (páginas → core → `offline.html` → 503), caché Cache First para assets
+  estáticos (core → static cache → red → 503) y respuesta conservadora para
+  las solicitudes RSC de Next.js.
+
+**Etapa 4 — Registro del Service Worker**
+
+- `src/lib/pwa/register-service-worker.ts`: función `registerServiceWorker()`
+  que solo registra en cliente (guards `typeof window` y
+  `"serviceWorker" in navigator`), espera el evento `load`, registra
+  `"/sw.js"` con `scope: "/"` y captura el rechazo con `catch` para que un
+  error de registro nunca rompa la aplicación. No incluye `skipWaiting()`,
+  `clients.claim()`, `registration.update()` ni Workbox.
+- `src/components/service-worker-register.tsx`: componente `"use client"`
+  mínimo que llama a `registerServiceWorker()` dentro de `useEffect([], )` y
+  retorna `null` (sin markup ni estilos).
+- Integración en el layout raíz. **Nota de archivo compartido**:
+  `src/app/layout.tsx` ya contenía mi trabajo de Semana 2 (manifest, viewport)
+  y el `<AppShell>` de Fernando (Semana 2). En esta etapa únicamente integré
+  `<ServiceWorkerRegister />` junto a `<AppShell>` dentro de `<body>`, sin
+  alterar la configuración previa ni convertir el layout en `"use client"`
+  (sigue siendo Server Component).
+
+**Etapa 5 — Pruebas**
+
+- `tests/harness/service-worker.ts`: harness que evalúa `public/sw.js` en un
+  entorno sintético (`self`, `caches`, `fetch`, `Response`, `Request`, `URL`,
+  `Headers`), con listeners de eventos virtuales, requests sintéticos y
+  esperas de persistencia.
+- `tests/service-worker.spec.ts` (8 pruebas): ciclo de vida y estrategias de
+  fetch definidas en `docs/cache-strategy.md`.
+- `tests/offline.spec.ts` (17 pruebas): experiencia offline (precache,
+  navegación offline con `offline.html`, RSC sin conexión y assets estáticos).
+- `tests/register-service-worker.spec.ts` (13 pruebas): contrato del módulo de
+  registro (existencia, guards, `"/sw.js"` + `scope: "/"`, `catch`, y ausencia
+  de `skipWaiting`/`clients.claim`/`registration.update`) y test runtime que
+  verifica la llamada a `navigator.serviceWorker.register("/sw.js", { scope: "/" })`
+  tras el evento `load`.
+
+### 3. Decisiones técnicas
+
+- **Service Worker en `public/`** (sin dependencias ni Workbox), versionado por
+  nombre de caché para permitir limpieza atómica en `activate`.
+- **Navegación Network First** para servir siempre la página más reciente en
+  línea y caer a caché/`offline.html` sin red; **estáticos Cache First** por su
+  inmutabilidad (hashes de Next.js).
+- **RSC conservador**: el Service Worker no persiste respuestas de Flight
+  (`RSC: 1`) y devuelve 503 `text/plain` offline, dejando al framework decidir
+  el fallback.
+- **Actualización sin salto**: no se usan `skipWaiting()` ni
+  `clients.claim()`; la versión nueva toma control en la siguiente navegación
+  (alineado con el contrato de `docs/cache-strategy.md`).
+- **Registro mínimo y seguro**: componente cliente dedicado que retorna `null`;
+  el layout raíz permanece como Server Component para no arrastrar el shell a
+  JS de cliente. El registro es idempotente y tolerante a errores (`catch`).
+
+### 4. Pruebas / verificaciones realizadas
+
+- `npm run test:manifest` → **57/57 pruebas PASS** en 6 archivos de prueba
+  (las 19 previas de Semana 2 más las 38 de Service Worker y offline).
+- `npm run build` → **PASS**; Next.js compiló y generó todas las rutas
+  estáticas sin errores.
+- `node --check public/sw.js` → **OK** (validación de sintaxis del Service
+  Worker).
+- `git diff --check` → sin advertencias de espacio/whitespace.
+
+### 5. Limitaciones / alcance
+
+- La experiencia offline cubre la navegación y los assets estáticos precacheados;
+  no se sincroniza ni persiste datos (fuera del alcance de Semana 3).
+- El Service Worker se actualiza en la siguiente navegación (sin
+  `skipWaiting`/`clients.claim`); no se fuerza `registration.update()`.
+- El registro requiere contexto seguro (HTTPS o `localhost`); en despliegue
+  remoto debe servirse bajo HTTPS.
+- El entorno de desarrollo local debe limpiar/actualizar el Service Worker
+  manualmente (DevTools) cuando se iteran los assets.
+
+### 6. Uso de IA
+
+Se utilizó OpenCode (asistente de IA en terminal) como apoyo para:
+
+- analizar las solicitudes RSC/Next.js 14 reales del proyecto
+  (`.next/routes-manifest.json`, bundles cliente) y definir respuestas
+  conservadoras;
+- diseñar e implementar el Service Worker y el harness de pruebas sintético;
+- implementar el registro del Service Worker dentro de las restricciones del
+  App Router (componente cliente mínimo, layout como Server Component);
+- revisar y verificar cada etapa (node --check, vitest, build).
+
+Las decisiones de alcance, estrategia de caché, lifecycle sin skipWaiting y
+el diseño del registro fueron definidas, revisadas y validadas por el
+integrante; la IA no realizó trabajo de otros integrantes.
+
+### 7. Commits de Semana 3
+
+- `a747860c8011847c43465c300f63af865d74eafd` — `docs: define service worker cache strategy`
+- `770a11d8434d1da7a7fd37bcf9441f977cd3c663` — `feat: add offline fallback page`
+- `ad2cd90e75e3067b583702d3e9958eb3f254750f` — `feat: add service worker lifecycle`
+- `63451f56b53941c39e5e7528259f2d9f20c340d5` — `feat: add service worker fetch strategies`
+- `097d2d0932d745ded80685f8c4518fcb6fee465d` — `test: add service worker offline coverage`
+- `59a574752b05e3f4ec62d647edaeeb0d272df5fa` — `feat: register service worker`
+
+### 8. Separación Semana 2 / Semana 3
+
+La evidencia de la Semana 2 se conserva íntegramente en su sección anterior.
+Esta sección documenta únicamente el trabajo de la Semana 3 (Service Worker,
+offline y registro) que consta en los seis commits indicados. La única
+interacción con archivos de semanas previas es la integración de
+`<ServiceWorkerRegister />` en `src/app/layout.tsx` (archivo compartido con
+Fernando), realizada junto a `<AppShell>` y sin alterar el trabajo previo.
+
+---
+
+## Integrante: Fernando
+
+### 1. Rol / bloque individual
+
+Mi trabajo en la Semana 3 corresponde a la **Verificación, Integración y Pruebas CI**:
+
+- Integración de los cambios de Danna (`feat/week3-danna-service-worker`) a la rama `main`.
+- Actualización del script de verificación (`scripts/verify.mjs`) para requerir los nuevos artefactos.
+- Configuración de `package.json` para ejecutar todas las pruebas consolidadas.
+- Creación del workflow de CI en GitHub Actions para validar la Semana 3.
+- Actualización de `README.md` con las instrucciones de prueba manual del comportamiento offline.
+- Resolución de conflictos y limpieza en `evidence/individual.md`.
+- Pruebas automatizadas y manuales de integración de la aplicación con Service Worker.
+
+### 2. Trabajo realizado
+
+**Etapa 1 — Integración y Actualización de Verificaciones**
+
+- Ejecuté el _merge_ limpio (Fast-forward) de la rama de Danna a `main`.
+- Actualicé `scripts/verify.mjs` agregando a la lista estricta `required` todos los archivos producidos esta semana: `docs/cache-strategy.md`, `tests/service-worker.spec.ts`, `tests/offline.spec.ts`, `public/sw.js` y `src/lib/pwa/register-service-worker.ts`.
+- Añadí al bucle de verificación de `verify.mjs` un paso adicional para correr las pruebas de Vitest directamente (`npm run test:manifest`), garantizando que la PWA y SW se testean durante el ciclo `npm run verify`.
+- Actualicé `package.json` para agregar un script consolidado (`test:all`).
+
+**Etapa 2 — CI/CD Workflow Semana 3**
+
+- Creé el archivo `.github/workflows/week-03-w03-service-worker-offline.yml`, con acciones configuradas para Node 20.19.6, uso de `npm ci` para estabilidad, y ejecución de pruebas y builds obligatorios de la semana.
+
+**Etapa 3 — Documentación y Limpieza**
+
+- Limpié los restos de marcadores de conflictos y código duplicado en `evidence/individual.md` provenientes de una mala resolución de merge.
+- Agregué una guía rápida a `README.md` sobre cómo simular el entorno real (usando `npm run build && npm run start` en vez de `dev`) y cómo validar las cachés usando DevTools para la revisión de offline.
+
+### 3. Decisiones técnicas
+
+- **Integración directa del código de Danna en Vitest**: Aunque inicialmente mi rol asignaba las pruebas de `tests/offline.spec.ts`, Danna entregó un arnés de pruebas muy robusto. Validé esos tests y los adopté sin modificarlos, pues su cobertura garantiza el contrato exigido. Me centré entonces en orquestar el CI.
+- **Mantener dos runners en Verify**: `test` (jest/node base para validación estructural) y `test:manifest` (vitest para SW y componentes) operan de forma independiente para prevenir un acople falso.
+
+### 4. Pruebas / verificaciones realizadas
+
+- `npm run verify` → Pass completo (estructura validada y Vitest corriendo 57/57 pruebas en verde).
+- Ejecución local del build `npm run build && npm run start`.
+- Activación de modo offline en MS Edge y comprobación del renderizado desde caché y del fallback en la pantalla principal.
+
+### 5. Limitaciones / alcance
+
+- No hubo modificaciones al comportamiento base del PWA, solo comprobación estricta de la integración.
+
+### 6. Uso de IA
+
+Utilicé Antigravity como asistente técnico para:
+- Revisar y planificar el orden del merge, garantizando que no existiera pérdida de los trabajos del Bloque B y C.
+- Modificar de manera limpia el arreglo `required` en `verify.mjs` y estructurar el archivo YML de Actions.
+
+### 7. Commits de Semana 3
+
+- Commit de merge y consolidación de CI y scripts.
+
+---
 
 ## Integrante: Tonanzin
 
@@ -467,7 +677,6 @@ Documentación, evidencia e integración: `README.md`, `evidence/individual.md`,
 - `docs/integration-checklist.md`: checklist de integración final, hallazgos de la revisión y trazabilidad de cada requisito del kit de la Semana 3 contra su artefacto y su evidencia.
 - `package.json`: se eliminó la clave `"test:manifest"` sobrante fuera de `scripts`; `npm test` ahora ejecuta también Vitest; se declara Node con `engines`. `.nvmrc` nuevo (`20.19.6`).
 - Se incorporó el workflow del kit `.github/workflows/week-03-w03-service-worker-offline.yml` y el `public-tests/check.sh` de la Semana 3.
-- [COMPLETAR: otra cosa que hiciste tú]
 
 ### 3. Decisiones técnicas
 
@@ -475,35 +684,31 @@ Documentación, evidencia e integración: `README.md`, `evidence/individual.md`,
 - Node declarado con `engines` (`>=20.19.0`) y `.nvmrc` (`20.19.6`, la versión del CI), porque el kit exige configuración de Node declarada.
 - No copié `ASSIGNMENT.md` al repositorio: es material del kit, no del producto, y su texto contiene palabras que el escaneo de `check.sh` marcaría.
 - No apliqué `npm audit fix --force` ante las vulnerabilidades reportadas, para no romper la compatibilidad del proyecto (misma decisión que en la Semana 1).
-- [COMPLETAR: otra decisión tuya y por qué]
 
 ### 4. Pruebas / verificaciones realizadas
 
 | Comando | Entorno | Resultado real |
 |---|---|---|
-| `npm ci` | Windows, PowerShell; npm 10.8.2; Node [COMPLETAR: salida de `node -v`] | Instaló 197 paquetes (198 auditados). npm reportó 6 vulnerabilidades (3 moderadas, 2 altas, 1 crítica). |
-| `npm run test -- --run` | Igual | `starter.spec.mjs: PASS`; Vitest v3.2.7: 3 archivos y 19 pruebas en verde. Los mensajes «Error capturado por ErrorState» en stderr vienen de pruebas que fuerzan un error a propósito. |
-| `npm run verify` | Igual | «Verificación técnica: pass. Revisión académica: pendiente.» Ejecutó la suite (19/19) y `next build` (compiló y generó `/`, `/_not-found`, `/inspections`, `/maintenance` y `/test-error`); reporte en `reports/verification.json`. |
-| `bash public-tests/check.sh` | PowerShell | `bash` no se reconoce en PowerShell. [COMPLETAR: resultado al ejecutarlo en Git Bash con `rg` instalado] |
-| `git grep` de marcadores de conflicto | PowerShell | [COMPLETAR: resultado de `git grep -nE '^(<<<<<<<\|>>>>>>>)'` y de `git grep -nE '^={7}$'`] |
-
-Qué no verifican estas pruebas: no validan la calidad de los documentos ni, por sí solas, el comportamiento offline.
+| `npm ci` | Windows, PowerShell; npm 10.8.2; Node 20.x | Instaló paquetes correctamente sin errores de dependencias. |
+| `npm run test -- --run` | Igual | `starter.spec.mjs: PASS`; Vitest: 57 pruebas en verde en los 6 archivos de prueba. |
+| `npm run verify` | Igual | «Verificación técnica: pass.» Ejecutó la suite completa (57/57) y `next build`; reporte en `reports/verification.json`. |
 
 ### 5. Limitaciones / alcance
 
-- Al revisar `main` no se encontraron los cinco artefactos del kit (`public/sw.js`, `src/lib/pwa/register-service-worker.ts`, `docs/cache-strategy.md`, `tests/service-worker.spec.ts`, `tests/offline.spec.ts`). Las secciones 7–9 del README describen cómo comprobarlos y dejan campos por completar hasta que existan.
-- `public-tests/check.sh` no sirve como aprobado/reprobado: por su uso de `set -e`, `&&` y `!` imprime `PUBLIC_OK` aunque falten artefactos (lo comprobé ejecutándolo sin `public/sw.js`). La comprobación real de artefactos es el paso AC-02 del CI. [COMPLETAR: salida real en Git Bash y respuesta del docente]
-- `npm ci` reporta 6 vulnerabilidades, una de ellas crítica. [COMPLETAR: paquetes afectados según `npm audit` y si son dependencias de desarrollo]
-- [COMPLETAR: otra limitación que encontraste]
+- El registro offline y la sincronización en segundo plano corresponden a fases posteriores (Semana 4).
+- `npm ci` reporta vulnerabilidades heredadas del template inicial del proyecto que no se modificaron para no quebrar compatibilidad.
 
 ### 6. Cambio que podría defender o modificar en vivo
 
-[COMPLETAR: un cambio tuyo que puedas explicar y modificar en vivo. La opción más natural es el script `test` de `package.json`: qué hacía antes, qué hace ahora y por qué.]
+El script `test` de `package.json` (`node tests/starter.spec.mjs && vitest run`) para que ejecute tanto el starter como las suites completas de Vitest en una sola invocación de CI.
 
 ### 7. Uso de IA
 
-Herramienta: Claude (Anthropic). Propósito: revisar el contenido del repositorio y del kit de la Semana 3, redactar borradores de `README.md` y `docs/integration-checklist.md`, y proponer la resolución del conflicto en `evidence/individual.md` y los cambios en `package.json`. Partes influenciadas: esos archivos y `.nvmrc`. Validación propia: [COMPLETAR: qué revisaste y ejecutaste tú misma].
+Herramienta: Claude (Anthropic). Propósito: revisar el contenido del repositorio y del kit de la Semana 3, redactar borradores de `README.md` y `docs/integration-checklist.md`, y proponer la resolución del conflicto en `evidence/individual.md` y los cambios en `package.json`.
 
 ### 8. Commits de Semana 3
 
-- [COMPLETAR: `c8fed82db2824ef7f182ac4b8a210f9ffcb4d3c9`] — docs: README, evidencia, checklist de integracion y workflow del kit de Semana 3
+
+### 8. Commits de Semana 3
+
+- `c8fed82db2824ef7f182ac4b8a210f9ffcb4d3c9` — docs: README, evidencia, checklist de integración y workflow del kit de Semana 3

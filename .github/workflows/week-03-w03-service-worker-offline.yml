@@ -17,11 +17,16 @@ jobs:
     steps:
       - name: Checkout
         uses: actions/checkout@v4
+      - name: Setup Node
+        uses: actions/setup-node@v4
+        with:
+          node-version: '20.19.6'
+          cache: npm
       - name: Setup 1
         shell: bash
         run: |
           set -euo pipefail
-          npm ci --ignore-scripts --no-audit --no-fund
+          npm ci --no-audit --no-fund
       - name: AC-01 - Instalación limpia y build completan.
         shell: bash
         run: |
@@ -37,6 +42,10 @@ jobs:
         run: |
           set -euo pipefail
           test -d tests && find tests -type f -print -quit | grep -q . && npm run test --if-present -- --run
+      - name: Verificación técnica del proyecto
+        shell: bash
+        run: |
+          npm run verify
       - name: Upload evaluation artifacts
         if: always()
         uses: actions/upload-artifact@v4
@@ -47,3 +56,5 @@ jobs:
             evaluation-result.json
             coverage/
             test-results/
+            reports/verification.json
+            vitest-report.json

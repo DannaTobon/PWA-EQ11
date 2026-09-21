@@ -8,6 +8,7 @@
     "start": "next start",
     "test": "node tests/starter.spec.mjs && vitest run",
     "test:manifest": "vitest run --reporter=default --reporter=json --outputFile=vitest-report.json",
+    "test:all": "npm test && npm run test:manifest",
     "verify": "node scripts/verify.mjs"
   },
   "dependencies": {
