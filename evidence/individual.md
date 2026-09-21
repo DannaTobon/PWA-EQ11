@@ -1,4 +1,3 @@
-
 # Evidencia individual del equipo
 
 > Un solo archivo compartido. Repitan la sección siguiente por cada integrante; cada persona escribe y explica su propia evidencia. Se aceptan evidencias previas equivalentes. El SHA final se entrega en Classroom después del último commit, para evitar modificar el commit que se está identificando.
@@ -57,8 +56,6 @@
 ---
 
 ## Integrante: Tonanzin
-
-## Evidencia individual — Tonanzin
 
 - **Mi contribución concreta y enlace a archivo, commit anterior o revisión:**
   Redacción de `docs/decision-record.md` (ADR-001), incluyendo la comparación de las 4 alternativas (PWA, web tradicional, nativa, multiplataforma) y la justificación de la decisión. Commit `04040af12498d83f4def66c439ceeab5b4099c37` en la rama `main`: "docs: agregar ADR-001 sobre estrategia de aplicacion (PWA)".
@@ -240,6 +237,8 @@ encabezado propio, documenta únicamente el trabajo de la Semana 2 que consta en
 los dos commits indicados. No se mezclan puntos de Semana 2 dentro de las listas
 de Semana 1.
 
+---
+
 ## Integrante: Tonanzin
 
 ### 1. Rol / bloque individual
@@ -333,6 +332,7 @@ incluyeron en mi commit, ya que pertenecen a su bloque y su PR.
   `main` hasta que se fusione el PR de Fernando (`feature/app-shell-ui`): es
   una dependencia esperada del Bloque C sobre el Bloque B, no un error de mi
   configuración.
+  **Actualización posterior:** el PR del Bloque B ya está fusionado en `main` (existen `src/components/app-shell.tsx` y `src/components/ui/*`, integrado en `src/app/layout.tsx`), por lo que esta limitación dejó de aplicar en `main`.
 - No se implementaron pruebas de integración de rutas completas
   (`/inspections`, `/maintenance`) ni pruebas end-to-end; el alcance acordado
   para el Bloque C esta semana es manifest + comportamiento de componentes
@@ -662,3 +662,50 @@ Utilicé Antigravity como asistente técnico para:
 
 - Commit de merge y consolidación de CI y scripts.
 
+---
+
+## Integrante: Tonanzin
+
+### 1. Rol / bloque individual
+
+Documentación, evidencia e integración: `README.md`, `evidence/individual.md`, revisión de los criterios del kit de la Semana 3, checklist de integración final, limpieza del repositorio y participación en la revisión final.
+
+### 2. Trabajo realizado
+
+- `README.md`: instalación, ejecución, verificación, manifest, Service Worker, offline y cachés, pruebas ejecutadas, decisiones, supuestos, limitaciones y evidencia de la entrega.
+- `evidence/individual.md`: resolución del conflicto de merge que seguía en `main` (quedaban un `=======` y un `>>>>>>>` con el archivo duplicado), conservando la evidencia de Semana 1 y las secciones de Semana 2 de Danna, Tonanzin y Fernando.
+- `docs/integration-checklist.md`: checklist de integración final, hallazgos de la revisión y trazabilidad de cada requisito del kit de la Semana 3 contra su artefacto y su evidencia.
+- `package.json`: se eliminó la clave `"test:manifest"` sobrante fuera de `scripts`; `npm test` ahora ejecuta también Vitest; se declara Node con `engines`. `.nvmrc` nuevo (`20.19.6`).
+- Se incorporó el workflow del kit `.github/workflows/week-03-w03-service-worker-offline.yml` y el `public-tests/check.sh` de la Semana 3.
+
+### 3. Decisiones técnicas
+
+- `npm test` ejecuta la prueba del starter y después Vitest, porque el workflow del kit invoca `npm run test -- --run`; con el script anterior las pruebas nuevas de Vitest no se habrían ejecutado en ese paso.
+- Node declarado con `engines` (`>=20.19.0`) y `.nvmrc` (`20.19.6`, la versión del CI), porque el kit exige configuración de Node declarada.
+- No copié `ASSIGNMENT.md` al repositorio: es material del kit, no del producto, y su texto contiene palabras que el escaneo de `check.sh` marcaría.
+- No apliqué `npm audit fix --force` ante las vulnerabilidades reportadas, para no romper la compatibilidad del proyecto (misma decisión que en la Semana 1).
+
+### 4. Pruebas / verificaciones realizadas
+
+| Comando | Entorno | Resultado real |
+|---|---|---|
+| `npm ci` | Windows, PowerShell; npm 10.8.2; Node 20.x | Instaló paquetes correctamente sin errores de dependencias. |
+| `npm run test -- --run` | Igual | `starter.spec.mjs: PASS`; Vitest: 57 pruebas en verde en los 6 archivos de prueba. |
+| `npm run verify` | Igual | «Verificación técnica: pass.» Ejecutó la suite completa (57/57) y `next build`; reporte en `reports/verification.json`. |
+
+### 5. Limitaciones / alcance
+
+- El registro offline y la sincronización en segundo plano corresponden a fases posteriores (Semana 4).
+- `npm ci` reporta vulnerabilidades heredadas del template inicial del proyecto que no se modificaron para no quebrar compatibilidad.
+
+### 6. Cambio que podría defender o modificar en vivo
+
+El script `test` de `package.json` (`node tests/starter.spec.mjs && vitest run`) para que ejecute tanto el starter como las suites completas de Vitest en una sola invocación de CI.
+
+### 7. Uso de IA
+
+Herramienta: Claude (Anthropic). Propósito: revisar el contenido del repositorio y del kit de la Semana 3, redactar borradores de `README.md` y `docs/integration-checklist.md`, y proponer la resolución del conflicto en `evidence/individual.md` y los cambios en `package.json`.
+
+### 8. Commits de Semana 3
+
+- Commit de documentación, checklist y configuración de CI de Semana 3.
