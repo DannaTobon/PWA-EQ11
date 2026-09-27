@@ -3,7 +3,7 @@ import { resolve } from "node:path";
 import { spawnSync } from "node:child_process";
 
 const root = resolve(import.meta.dirname, "..");
-const required = ["package.json", "package-lock.json", "README.md", "src/app/layout.tsx", "src/app/page.tsx", "src/app/globals.css", "src/lib/data/inspections.ts", "docs/requirements.md", "docs/decision-record.md", "docs/cache-strategy.md", "tests/starter.spec.mjs", "tests/service-worker.spec.ts", "tests/offline.spec.ts", "public/sw.js", "src/lib/pwa/register-service-worker.ts", "evidence/individual.md"];
+const required = ["package.json", "package-lock.json", "README.md", "src/app/layout.tsx", "src/app/page.tsx", "src/app/globals.css", "src/lib/data/inspections.ts", "docs/requirements.md", "docs/decision-record.md", "docs/cache-strategy.md", "tests/starter.spec.mjs", "tests/service-worker.spec.ts", "tests/offline.spec.ts", "public/sw.js", "src/lib/pwa/register-service-worker.ts", "evidence/individual.md", "src/app/inspecciones/page.tsx", "src/app/inspecciones/[id]/page.tsx", "src/app/api/inspecciones/route.ts", "tests/rendering.spec.tsx", "docs/rendering-decision.md"];
 const missing = required.filter(file => !existsSync(resolve(root, file)));
 const structureOnly = process.argv.includes("--structure");
 if (structureOnly) {
