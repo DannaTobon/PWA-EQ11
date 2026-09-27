@@ -13,7 +13,8 @@ Stack: Next.js 14 (App Router) + React 18 + TypeScript. Pruebas con Vitest + Tes
 | AppShell (header, navegación, main, footer) y estados de UI (loading, error, empty) | Implementado |
 | Pruebas automatizadas (manifest y comportamiento de UI) y CI | Implementado |
 | Service Worker, cachés y funcionamiento offline (Semana 3) | **Implementado** (`public/sw.js`, `src/lib/pwa/register-service-worker.ts`, `docs/cache-strategy.md`, `tests/service-worker.spec.ts` y `tests/offline.spec.ts`) |
-| Registro de inspecciones, persistencia local, sincronización, API, autenticación | No implementado (Semana 4+) |
+| CSR/SSR con estados verificables (Semana 4): `/inspecciones` (cliente) y `/inspecciones/[id]` (servidor dinámico) | **Implementado** (`src/app/inspecciones/page.tsx`, `src/app/inspecciones/[id]/page.tsx`, `src/app/api/inspecciones/route.ts`, `tests/rendering.spec.tsx`, `docs/rendering-decision.md`) |
+| Registro de inspecciones, persistencia local, sincronización, autenticación | No implementado (semanas posteriores) |
 
 ## 2. Entorno
 
@@ -58,7 +59,9 @@ npm start
 | Ruta | Contenido |
 |---|---|
 | `/` | Página de bienvenida con enlaces a las secciones |
-| `/inspections` | Listado de las tres inspecciones sintéticas |
+| `/inspections` | Listado de las tres inspecciones sintéticas (ruta previa, se conserva por decisión del equipo) |
+| `/inspecciones` | Listado **CSR**: componente cliente que consulta `/api/inspecciones` y muestra carga, error, reintento y lista. Forzar el fallo determinista con `/inspecciones?fallar=1` |
+| `/inspecciones/[id]` | Detalle **SSR dinámico** (`force-dynamic`) de una inspección por `id`, p. ej. `/inspecciones/inspection-001`. Un `id` inexistente muestra la vista de "no encontrada" |
 | `/maintenance` | Estructura inicial de mantenimiento (sin funcionalidad de registro) |
 | `/test-error` | Ruta de QA que lanza un error deliberado para comprobar el `ErrorBoundary` |
 | `/offline` | Página de fallback offline cuando no hay conectividad de red |
@@ -67,8 +70,8 @@ npm start
 
 | Comando | Qué hace | Qué **no** verifica |
 |---|---|---|
-| `npm run verify` (equivalente exacto de `make verify`) | Comprueba archivos requeridos (incluyendo los 5 artefactos de Semana 3), corre `npm test` y `npm run build`; genera `reports/verification.json` | Calidad de los documentos ni sincronización en la nube |
-| `npm test` | Ejecuta `tests/starter.spec.mjs` y toda la suite de Vitest (`vitest run`). El CI de la Semana 3 lo invoca como `npm run test -- --run` | Rutas completas, pruebas end-to-end |
+| `npm run verify` (equivalente exacto de `make verify`) | Comprueba archivos requeridos (incluyendo los artefactos de Semana 3 y de Semana 4: `src/app/inspecciones/page.tsx`, `src/app/inspecciones/[id]/page.tsx`, `tests/rendering.spec.tsx`, `docs/rendering-decision.md`), corre `npm test` y `npm run build`; genera `reports/verification.json` | Calidad de los documentos ni sincronización en la nube |
+| `npm test` | Ejecuta `tests/starter.spec.mjs` y **toda** la suite de Vitest (`vitest run`), incluyendo `tests/rendering.spec.tsx` de la Semana 4 (el patrón `include` de `vitest.config.mts` ya cubre cualquier `tests/**/*.spec.ts(x)` nuevo, sin configuración adicional). El CI de la Semana 3 lo invoca como `npm run test -- --run` | Rutas completas, pruebas end-to-end |
 | `npm run test:manifest` | Ejecuta la suite de Vitest y escribe `vitest-report.json` | Pruebas end-to-end |
 | `npm run build` | Compilación de producción de Next.js, lint y validación de tipos | Comportamiento en ejecución |
 | `bash public-tests/check.sh` | Comprueba contrato mínimo de la Semana 3 (cinco artefactos y README) | Pruebas funcionales de lógica de negocio |
@@ -120,7 +123,7 @@ Nota: `test:manifest` corre todas las pruebas de Vitest, no solo las del manifes
 
 ## 10. Pruebas ejecutadas
 
-Suite automatizada actual: **57 pruebas de Vitest + 1 prueba del starter** (Total: 58 pruebas, 100% pasando).
+Suite automatizada actual: **61 pruebas de Vitest + 1 prueba del starter** (Total: 62 pruebas, 100% pasando).
 
 | Archivo | Pruebas | Qué cubre |
 |---|---:|---|
@@ -131,8 +134,9 @@ Suite automatizada actual: **57 pruebas de Vitest + 1 prueba del starter** (Tota
 | `tests/service-worker.spec.ts` | 8 | Ciclo de vida del Service Worker (install, activate, precache, fetch handling) |
 | `tests/offline.spec.ts` | 17 | Experiencia offline, navegación fallback y manejo de caché estática y dinámica |
 | `tests/register-service-worker.spec.ts` | 13 | Contrato y comportamiento del cliente de registro del Service Worker |
+| `tests/rendering.spec.tsx` | 5 | CSR (`/inspecciones`): carga→lista, error ante fallo controlado y reintento; SSR (`/inspecciones/[id]`): detalle válido e invocación de `notFound()` ante un id inexistente |
 
-Resultado observado en local y CI: `npm test` y `npm run verify` completan con «Verificación técnica: pass», con el build generando `/`, `/_not-found`, `/inspections`, `/maintenance`, `/offline` y `/test-error`.
+Resultado observado en local: `npm test` → 7 archivos, 62 pruebas en verde. `npm run verify` completa con «Verificación técnica: pass» (estructura + suite completa + `npm run build`), con el build generando `/`, `/_not-found`, `/inspecciones` (estática), `/inspecciones/[id]` (dinámica, server-rendered on demand), `/inspections`, `/maintenance`, `/offline` y `/test-error`.
 
 ## 11. Decisiones técnicas relevantes
 
@@ -144,6 +148,8 @@ Resultado observado en local y CI: `npm test` y `npm run verify` completan con �
 - **Componente cliente `<ServiceWorkerRegister />`** aislado, manteniendo `layout.tsx` como Server Component.
 - **Vitest en entorno `jsdom`** con plugin de React y versiones compatibles con Node 20.
 - **`npm test` unificado** (`node tests/starter.spec.mjs && vitest run`) para compatibilidad directa con el runner del CI.
+- **Contraste CSR/SSR de la Semana 4** (`docs/rendering-decision.md`): `/inspecciones` como componente cliente (`"use client"`) que reutiliza `LoadingState`/`ErrorState` ya existentes, con un endpoint interno (`/api/inspecciones`) que puede fallar de forma determinista (`?fallar=1`); `/inspecciones/[id]` como Server Component con `export const dynamic = "force-dynamic"` para renderizarse por solicitud, resolviendo un id inexistente con `notFound()`.
+- **Pruebas nuevas en `tests/rendering.spec.tsx`** (no `.spec.ts`): la extensión `.tsx` es necesaria para que Vitest/esbuild compile el JSX usado al renderizar las páginas en las pruebas.
 
 ## 12. Supuestos
 
@@ -151,12 +157,16 @@ Resultado observado en local y CI: `npm test` y `npm run verify` completan con �
 - El alcance de la Semana 3 es la consulta offline de la interfaz y de los datos sintéticos ya cacheados. El registro offline y la sincronización (RF-02 a RF-04) quedan para semanas posteriores.
 - Las comprobaciones manuales de Service Worker, offline y cachés se realizan sobre el build de producción en `localhost` (contexto seguro).
 - `make verify` no es obligatorio; su equivalente exacto es `npm run verify`.
+- El retardo de 800 ms del endpoint `/api/inspecciones` es una métrica de desarrollo para observar los estados de carga; no mide latencia real de red ni de producción.
+- La ruta `/inspections` (en inglés) se mantiene sin cambios; el equipo decidió no migrarla en esta entrega.
 
 ## 13. Limitaciones
 
 - No hay persistencia de modificaciones realizadas offline ni sincronización en segundo plano (Background Sync).
 - Las dependencias del starter original reportan vulnerabilidades heredadas que no se alteraron para conservar estabilidad.
 - No hay autenticación de usuarios ni bases de datos remotas conectadas.
+- La navegación (`AppShell`) y el precache del Service Worker no se actualizaron para incluir `/inspecciones`: el listado depende de un fetch que puede fallar deliberadamente y el detalle es dinámico por solicitud, por lo que precachearlos como contenido estático contradiría lo que la actividad de Semana 4 pide demostrar (ver `docs/rendering-decision.md`, sección 5).
+- La prueba de `notFound()` en `tests/rendering.spec.tsx` verifica que la función se invoca, pero no reproduce el pipeline completo de Next.js que sustituye la salida por `not-found.tsx`; esa parte se validó manualmente con el build de producción.
 
 ## 14. Evidencia de la entrega
 
@@ -164,20 +174,22 @@ Resultado observado en local y CI: `npm test` y `npm run verify` completan con �
 - `docs/requirements.md` y `docs/decision-record.md`: requisitos y decisión del equipo.
 - `docs/cache-strategy.md`: documentación completa de la estrategia de almacenamiento y ciclo de vida de cachés.
 - `docs/integration-checklist.md`: checklist de integración y trazabilidad del kit de Semana 3.
+- `docs/rendering-decision.md`: decisión técnica, supuestos, métrica, límites y fallos encontrados de la Semana 4 (CSR/SSR).
 - Artefactos de GitHub Actions del SHA entregado: `academic-evidence-w03-service-worker-offline`.
 - SHA final: se obtiene después del último commit con `git rev-parse HEAD`.
 
 ## 15. Estructura y flujo de trabajo
 
 ```text
-src/app/            rutas (/, /inspections, /maintenance, /offline, /test-error), layout
+src/app/            rutas (/, /inspecciones, /inspecciones/[id], /inspections, /maintenance, /offline, /test-error), layout
+src/app/api/        endpoint interno (/api/inspecciones) con fallo determinista (?fallar=1)
 src/components/     AppShell, componentes de estado (ui/) y registro SW
 src/lib/data/       datos sintéticos
 src/lib/pwa/        registro del Service Worker (register-service-worker.ts)
 public/             manifest, iconos, sw.js y offline.html
-tests/              pruebas Vitest (manifest, UI, service worker, offline) y starter
+tests/              pruebas Vitest (manifest, UI, service worker, offline, rendering CSR/SSR) y starter
 scripts/            verify.mjs
-docs/               requisitos, decisión (ADR-001), cache-strategy.md y checklist de integración
+docs/               requisitos, decisión (ADR-001), cache-strategy.md, rendering-decision.md y checklist de integración
 evidence/           evidencia individual (individual.md)
 .github/workflows/  CI (Semana 1, Semana 2 y Semana 3)
 ```
