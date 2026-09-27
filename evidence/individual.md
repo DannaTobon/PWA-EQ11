@@ -709,3 +709,16 @@ Herramienta: Claude (Anthropic). Propósito: revisar el contenido del repositori
 ### 8. Commits de Semana 3
 
 - [COMPLETAR: `c8fed82db2824ef7f182ac4b8a210f9ffcb4d3c9`] — docs: README, evidencia, checklist de integracion y workflow del kit de Semana 3
+
+---
+
+# Evidencia individual — Semana 04
+
+## Semana 04 — CSR/SSR con estados verificables
+
+- **Integrante:** Fernando
+- **Commit SHA:** `3c3f086b1ae1049bc135fd49cf6b27cb5ffc4618`
+- **Decisión técnica:** Implementación de la ruta CSR (`/inspecciones`) y un endpoint sintético que falla determinísticamente (`?fallar=1`). Se reutilizaron los estados `LoadingState` y `ErrorState` en un componente cliente (`"use client"`) para evitar *hydration mismatch* y asegurar un control interactivo (reintento) sin recargar la página.
+- **Prueba ejecutada:** `npm run build` — Se compiló estáticamente la página e incluyó el endpoint. Los 4 estados de la página se verificaron (Carga, Error, Lista y botón de Reintento).
+- **Limitación:** El endpoint sintético tiene un retraso fijo de 800ms configurado como métrica controlada de desarrollo, por lo que no es una medición de latencia real de red para producción. 
+- **Uso declarado de IA:** Utilicé Antigravity (Gemini/Claude) como asistente técnico dentro de mi IDE para modelar el componente CSR, extraer parámetros de red del lado cliente mediante `URLSearchParams` y diseñar el endpoint interno con simulación de fallo determinista.
