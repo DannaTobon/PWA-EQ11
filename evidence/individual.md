@@ -772,7 +772,7 @@ con el build y las pruebas.
 ## Semana 04 — CSR/SSR con estados verificables
 
 - **Integrante:** Tonanzin
-- **Commit SHA:** `[COMPLETAR: SHA real del commit propio tras `git rev-parse HEAD`]`
+- **Commit SHA:** `ea2fc4ec4e6a61a1b17177978dfbcec082f0c37b`
 - **Decisión técnica:** Se reutilizaron los componentes `LoadingState` y `ErrorState` ya existentes (`src/components/ui/`) en lugar de crear uno nuevo, por ya cumplir accesibilidad y estar integrados en `/inspecciones`. Se creó `tests/rendering.spec.tsx` (extensión `.tsx`, no `.ts`, requerida para compilar JSX) cubriendo carga→lista, error, reintento, detalle SSR válido y `notFound()` ante un id inexistente (mockeado, ya que el pipeline de Next.js para `not-found.tsx` no se reproduce fuera de su runtime). Se amplió el arreglo `required` de `scripts/verify.mjs` con los artefactos de la Semana 4. Documentación completa en `docs/rendering-decision.md`.
 - **Prueba ejecutada:** `npm ci` — instalación reproducible sin errores. `npx vitest run tests/rendering.spec.tsx` — 5/5 pruebas en verde. `npm test` — 7 archivos, 62 pruebas en verde. `npm run verify` — «Verificación técnica: pass» (estructura + suite completa + `npm run build`, con `/inspecciones` estática y `/inspecciones/[id]` dinámica en el reporte de rutas).
 - **Limitación:** La prueba de `notFound()` verifica que la función se invoca, no que Next.js efectivamente sustituya la vista por `not-found.tsx`; esa parte se validó manualmente sobre el build de producción. La navegación y el precache del Service Worker no se actualizaron para `/inspecciones` (decisión documentada en `docs/rendering-decision.md`, no pendiente).
