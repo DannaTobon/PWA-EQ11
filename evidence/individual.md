@@ -714,6 +714,52 @@ Herramienta: Claude (Anthropic). Propósito: revisar el contenido del repositori
 
 # Evidencia individual — Semana 04
 
+## Integrante: Danna Tobon
+
+### 1. Rol / bloque individual
+
+Mi trabajo en la Semana 04 corresponde al **detalle SSR dinámico de
+inspecciones** en la ruta `/inspecciones/[id]`.
+
+### 2. Trabajo realizado
+
+- Creación de `src/app/inspecciones/[id]/page.tsx` como Server Component para
+  consultar una inspección sintética mediante `params.id`.
+- Creación de `src/app/inspecciones/[id]/not-found.tsx` para presentar una
+  respuesta accesible cuando el identificador no existe.
+- Presentación de laboratorio, fecha, responsable, estado, resumen y hallazgos,
+  junto con un enlace de regreso al listado `/inspecciones`.
+
+### 3. Decisiones técnicas
+
+- El detalle se implementó como Server Component SSR dinámico mediante
+  `export const dynamic = "force-dynamic"`, para que Next.js lo renderice en
+  servidor por solicitud.
+- La búsqueda se realiza sobre los datos sintéticos locales con `params.id`.
+- Para un ID inexistente se usa `notFound()` y la vista local
+  `not-found.tsx`, en lugar de manejar un 404 manualmente.
+
+### 4. Pruebas / verificaciones realizadas
+
+- `npm run build` → **PASS**; Next.js compiló correctamente y reportó
+  `/inspecciones/[id]` como ruta dinámica renderizada en servidor bajo demanda.
+- `npm test` → **PASS**; 6 archivos de prueba y 57 pruebas aprobadas.
+
+### 5. Limitaciones / alcance
+
+- El detalle usa datos sintéticos locales; no mide rendimiento real de red ni
+  utiliza una API externa.
+
+### 6. Uso de IA
+
+Se utilizó Codex para analizar la estructura del repositorio, proponer e
+implementar la ruta. Danna revisó los archivos resultantes y validó el cambio
+con el build y las pruebas.
+
+### 7. Commits de Semana 04
+
+- `a60fe2044bb51af2527120df20547b683d5ccbaa` — implementación del detalle SSR
+  dinámico de inspecciones.
 ## Semana 04 — CSR/SSR con estados verificables
 
 - **Integrante:** Fernando
