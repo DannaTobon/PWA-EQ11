@@ -37,7 +37,7 @@ describe("AppShell", () => {
     const inspectionsLink = screen.getByRole("link", { name: "Inspecciones" });
     const maintenanceLink = screen.getByRole("link", { name: "Mantenimiento" });
 
-    expect(inspectionsLink).toHaveAttribute("href", "/inspections");
+    expect(inspectionsLink).toHaveAttribute("href", "/inspecciones");
     expect(maintenanceLink).toHaveAttribute("href", "/maintenance");
   });
 
