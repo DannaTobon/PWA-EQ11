@@ -14,7 +14,8 @@ Stack: Next.js 14 (App Router) + React 18 + TypeScript. Pruebas con Vitest + Tes
 | Pruebas automatizadas (manifest y comportamiento de UI) y CI | Implementado |
 | Service Worker, cachés y funcionamiento offline (Semana 3) | **Implementado** (`public/sw.js`, `src/lib/pwa/register-service-worker.ts`, `docs/cache-strategy.md`, `tests/service-worker.spec.ts` y `tests/offline.spec.ts`) |
 | CSR/SSR con estados verificables (Semana 4): `/inspecciones` (cliente) y `/inspecciones/[id]` (servidor dinámico) | **Implementado** (`src/app/inspecciones/page.tsx`, `src/app/inspecciones/[id]/page.tsx`, `src/app/api/inspecciones/route.ts`, `tests/rendering.spec.tsx`, `docs/rendering-decision.md`) |
-| Registro de inspecciones, persistencia local, sincronización, autenticación | No implementado (semanas posteriores) |
+| Persistencia local (IndexedDB), cola de sincronización idempotente y conflictos con revisión manual (Semana 5) | **En integración** (`src/lib/storage/`, `src/lib/sync/`, `docs/sync-policy.md`, `tests/sync.spec.ts`) |
+| Autenticación | No implementado (semanas posteriores) |
 
 ## 2. Entorno
 
@@ -167,6 +168,17 @@ Resultado observado en local: `npm test` → 7 archivos, 62 pruebas en verde. `n
 - No hay autenticación de usuarios ni bases de datos remotas conectadas.
 - La navegación (`AppShell`) y el precache del Service Worker no se actualizaron para incluir `/inspecciones`: el listado depende de un fetch que puede fallar deliberadamente y el detalle es dinámico por solicitud, por lo que precachearlos como contenido estático contradiría lo que la actividad de Semana 4 pide demostrar (ver `docs/rendering-decision.md`, sección 5).
 - La prueba de `notFound()` en `tests/rendering.spec.tsx` verifica que la función se invoca, pero no reproduce el pipeline completo de Next.js que sustituye la salida por `not-found.tsx`; esa parte se validó manualmente con el build de producción.
+
+## 13b. Sincronización y conflictos (Semana 5)
+
+Política de revisión manual por inspección: un conflicto conserva la versión local y la remota, detiene los reintentos de esa operación, bloquea las siguientes de la misma inspección y deja continuar las demás. Se resuelve con `keepLocal` (nueva operación con nuevo `operationId` sobre la revisión vigente) o `acceptServer` (sin enviar otra mutación). Detalle, límites y riesgos en `docs/sync-policy.md`.
+
+```bash
+npx vitest run tests/sync.spec.ts   # pruebas de conflictos
+npm ci && npm test && npm run build && npm run verify
+```
+
+`make verify` equivale a `npm run verify` (en Windows se usa este último). La API sintética es en memoria y pierde su estado al reiniciar; no hay Background Sync.
 
 ## 14. Evidencia de la entrega
 

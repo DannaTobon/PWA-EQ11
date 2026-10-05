@@ -3,7 +3,7 @@ import { resolve } from "node:path";
 import { spawnSync } from "node:child_process";
 
 const root = resolve(import.meta.dirname, "..");
-const required = ["package.json", "package-lock.json", "README.md", "src/app/layout.tsx", "src/app/page.tsx", "src/app/globals.css", "src/lib/data/inspections.ts", "docs/requirements.md", "docs/decision-record.md", "docs/cache-strategy.md", "tests/starter.spec.mjs", "tests/service-worker.spec.ts", "tests/offline.spec.ts", "public/sw.js", "src/lib/pwa/register-service-worker.ts", "evidence/individual.md", "src/app/inspecciones/page.tsx", "src/app/inspecciones/[id]/page.tsx", "src/app/api/inspecciones/route.ts", "tests/rendering.spec.tsx", "docs/rendering-decision.md"];
+const required = ["package.json", "package-lock.json", "README.md", "src/app/layout.tsx", "src/app/page.tsx", "src/app/globals.css", "src/lib/data/inspections.ts", "docs/requirements.md", "docs/decision-record.md", "docs/cache-strategy.md", "tests/starter.spec.mjs", "tests/service-worker.spec.ts", "tests/offline.spec.ts", "public/sw.js", "src/lib/pwa/register-service-worker.ts", "evidence/individual.md", "src/app/inspecciones/page.tsx", "src/app/inspecciones/[id]/page.tsx", "src/app/api/inspecciones/route.ts", "tests/rendering.spec.tsx", "docs/rendering-decision.md", "src/lib/storage/schema.ts", "src/lib/storage/indexeddb.ts", "src/lib/sync/queue.ts", "src/lib/sync/conflict-policy.ts", "tests/storage.spec.ts", "tests/queue.spec.ts", "tests/sync.spec.ts", "docs/sync-policy.md", ".github/workflows/week-05-w05-sync-data.yml"];
 const missing = required.filter(file => !existsSync(resolve(root, file)));
 const structureOnly = process.argv.includes("--structure");
 if (structureOnly) {
@@ -23,7 +23,7 @@ const git = args => {
   const r = spawnSync("git", args, { cwd: root, encoding: "utf8" });
   return r.status === 0 ? r.stdout.trim() : null;
 };
-const documents = ["docs/requirements.md", "docs/decision-record.md", "evidence/individual.md", "README.md"].map(file => ({ file, content: existsSync(resolve(root, file)) ? readFileSync(resolve(root, file), "utf8") : null }));
+const documents = ["docs/requirements.md", "docs/decision-record.md", "docs/sync-policy.md", "evidence/individual.md", "README.md"].map(file => ({ file, content: existsSync(resolve(root, file)) ? readFileSync(resolve(root, file), "utf8") : null }));
 const gitStatus = git(["status", "--porcelain"]);
 const result = {
   schemaVersion: 2,
