@@ -14,7 +14,7 @@ Stack: Next.js 14 (App Router) + React 18 + TypeScript. Pruebas con Vitest + Tes
 | Pruebas automatizadas (manifest y comportamiento de UI) y CI | Implementado |
 | Service Worker, cachés y funcionamiento offline (Semana 3) | **Implementado** (`public/sw.js`, `src/lib/pwa/register-service-worker.ts`, `docs/cache-strategy.md`, `tests/service-worker.spec.ts` y `tests/offline.spec.ts`) |
 | CSR/SSR con estados verificables (Semana 4): `/inspecciones` (cliente) y `/inspecciones/[id]` (servidor dinámico) | **Implementado** (`src/app/inspecciones/page.tsx`, `src/app/inspecciones/[id]/page.tsx`, `src/app/api/inspecciones/route.ts`, `tests/rendering.spec.tsx`, `docs/rendering-decision.md`) |
-| Persistencia local (IndexedDB), cola de sincronización idempotente y conflictos con revisión manual (Semana 5) | **En integración** (`src/lib/storage/`, `src/lib/sync/`, `docs/sync-policy.md`, `tests/sync.spec.ts`) |
+| Persistencia local (IndexedDB), cola de sincronización idempotente y conflictos con revisión manual (Semana 5) | **Implementado** (`src/lib/storage/`, `src/lib/sync/`, integración en `/inspecciones`, `docs/sync-policy.md`, `tests/sync.spec.ts`, `tests/sync-ui.spec.tsx`) |
 | Autenticación | No implementado (semanas posteriores) |
 
 ## 2. Entorno
@@ -71,8 +71,8 @@ npm start
 
 | Comando | Qué hace | Qué **no** verifica |
 |---|---|---|
-| `npm run verify` (equivalente exacto de `make verify`) | Comprueba archivos requeridos (incluyendo los artefactos de Semana 3 y de Semana 4: `src/app/inspecciones/page.tsx`, `src/app/inspecciones/[id]/page.tsx`, `tests/rendering.spec.tsx`, `docs/rendering-decision.md`), corre `npm test` y `npm run build`; genera `reports/verification.json` | Calidad de los documentos ni sincronización en la nube |
-| `npm test` | Ejecuta `tests/starter.spec.mjs` y **toda** la suite de Vitest (`vitest run`), incluyendo `tests/rendering.spec.tsx` de la Semana 4 (el patrón `include` de `vitest.config.mts` ya cubre cualquier `tests/**/*.spec.ts(x)` nuevo, sin configuración adicional). El CI de la Semana 3 lo invoca como `npm run test -- --run` | Rutas completas, pruebas end-to-end |
+| `npm run verify` (equivalente exacto de `make verify`) | Comprueba todos los archivos requeridos hasta Semana 5, corre la suite, genera `vitest-report.json`, ejecuta el build y genera `reports/verification.json` | Calidad académica de los documentos, servicios remotos reales ni pruebas end-to-end |
+| `npm test` | Ejecuta `tests/starter.spec.mjs` y toda la suite de Vitest (`vitest run`), incluidas persistencia, cola, conflictos e integración de la UI | Servicios externos o varias instancias del servidor |
 | `npm run test:manifest` | Ejecuta la suite de Vitest y escribe `vitest-report.json` | Pruebas end-to-end |
 | `npm run build` | Compilación de producción de Next.js, lint y validación de tipos | Comportamiento en ejecución |
 | `bash public-tests/check.sh` | Comprueba contrato mínimo de la Semana 3 (cinco artefactos y README) | Pruebas funcionales de lógica de negocio |
@@ -90,6 +90,7 @@ Nota: `test:manifest` corre todas las pruebas de Vitest, no solo las del manifes
 - `Starter Semana 1 — feedback` (`.github/workflows/week-01-starter-feedback.yml`): `npm ci` + `npm run verify`; sube el artefacto `starter-week-01-evidence`.
 - `Semana 2 — tests y build` (`.github/workflows/week-02-feedback.yml`): `npm ci` + `npm run test:manifest` + `npm run build`.
 - `Academic Evaluation Feedback` (`.github/workflows/week-03-w03-service-worker-offline.yml`, kit de Semana 3): `npm ci`, build de producción, comprobación de los 5 artefactos (AC-02), suite ejecutable (AC-03) y verificación técnica general.
+- `Academic Evaluation Feedback` (`.github/workflows/week-05-w05-sync-data.yml`, kit de Semana 5): instalación limpia, comprobación de entregables, `npm run verify` y publicación de `reports/verification.json` y `vitest-report.json`.
 
 `reports/verification.json` y `vitest-report.json` no se versionan (están en `.gitignore`): se adjuntan en Classroom o se descargan de Actions para el SHA entregado.
 
@@ -124,7 +125,7 @@ Nota: `test:manifest` corre todas las pruebas de Vitest, no solo las del manifes
 
 ## 10. Pruebas ejecutadas
 
-Suite automatizada actual: **61 pruebas de Vitest + 1 prueba del starter** (Total: 62 pruebas, 100% pasando).
+Suite automatizada actual: **104 pruebas de Vitest + 1 prueba del starter** (total: 105 pruebas).
 
 | Archivo | Pruebas | Qué cubre |
 |---|---:|---|
@@ -136,8 +137,12 @@ Suite automatizada actual: **61 pruebas de Vitest + 1 prueba del starter** (Tota
 | `tests/offline.spec.ts` | 17 | Experiencia offline, navegación fallback y manejo de caché estática y dinámica |
 | `tests/register-service-worker.spec.ts` | 13 | Contrato y comportamiento del cliente de registro del Service Worker |
 | `tests/rendering.spec.tsx` | 5 | CSR (`/inspecciones`): carga→lista, error ante fallo controlado y reintento; SSR (`/inspecciones/[id]`): detalle válido e invocación de `notFound()` ante un id inexistente |
+| `tests/storage.spec.ts` | 8 | Persistencia IndexedDB, reapertura, outbox y transacción conjunta |
+| `tests/queue.spec.ts` | 10 | Reintentos, idempotencia, clasificación HTTP y recuperación de operaciones interrumpidas |
+| `tests/sync.spec.ts` | 15 | Conflictos, ambas versiones, orden, recuperación y continuidad de otras inspecciones |
+| `tests/sync-ui.spec.tsx` | 8 | Inicio, evento `online`, desmontaje, exclusión mutua, reintento manual y UI de revisión |
 
-Resultado observado en local: `npm test` → 7 archivos, 62 pruebas en verde. `npm run verify` completa con «Verificación técnica: pass» (estructura + suite completa + `npm run build`), con el build generando `/`, `/_not-found`, `/inspecciones` (estática), `/inspecciones/[id]` (dinámica, server-rendered on demand), `/inspections`, `/maintenance`, `/offline` y `/test-error`.
+El resultado exacto de la verificación final se actualiza después de ejecutar la cadena reproducible de la sección de Semana 5. `npm run verify` valida estructura, suite completa y build, y deja ambos reportes ignorados por Git.
 
 ## 11. Decisiones técnicas relevantes
 
@@ -155,7 +160,7 @@ Resultado observado en local: `npm test` → 7 archivos, 62 pruebas en verde. `n
 ## 12. Supuestos
 
 - Todos los datos son sintéticos; no hay datos personales reales ni credenciales en el repositorio.
-- El alcance de la Semana 3 es la consulta offline de la interfaz y de los datos sintéticos ya cacheados. El registro offline y la sincronización (RF-02 a RF-04) quedan para semanas posteriores.
+- La captura de Semana 5 se guarda en IndexedDB y su operación queda en una cola persistente hasta que pueda sincronizarse.
 - Las comprobaciones manuales de Service Worker, offline y cachés se realizan sobre el build de producción en `localhost` (contexto seguro).
 - `make verify` no es obligatorio; su equivalente exacto es `npm run verify`.
 - El retardo de 800 ms del endpoint `/api/inspecciones` es una métrica de desarrollo para observar los estados de carga; no mide latencia real de red ni de producción.
@@ -163,7 +168,7 @@ Resultado observado en local: `npm test` → 7 archivos, 62 pruebas en verde. `n
 
 ## 13. Limitaciones
 
-- No hay persistencia de modificaciones realizadas offline ni sincronización en segundo plano (Background Sync).
+- No hay Background Sync: la pantalla debe estar abierta para procesar la cola al iniciar, al recibir `online` o mediante el botón manual.
 - Las dependencias del starter original reportan vulnerabilidades heredadas que no se alteraron para conservar estabilidad.
 - No hay autenticación de usuarios ni bases de datos remotas conectadas.
 - La navegación (`AppShell`) y el precache del Service Worker no se actualizaron para incluir `/inspecciones`: el listado depende de un fetch que puede fallar deliberadamente y el detalle es dinámico por solicitud, por lo que precachearlos como contenido estático contradiría lo que la actividad de Semana 4 pide demostrar (ver `docs/rendering-decision.md`, sección 5).
@@ -173,12 +178,26 @@ Resultado observado en local: `npm test` → 7 archivos, 62 pruebas en verde. `n
 
 Política de revisión manual por inspección: un conflicto conserva la versión local y la remota, detiene los reintentos de esa operación, bloquea las siguientes de la misma inspección y deja continuar las demás. Se resuelve con `keepLocal` (nueva operación con nuevo `operationId` sobre la revisión vigente) o `acceptServer` (sin enviar otra mutación). Detalle, límites y riesgos en `docs/sync-policy.md`.
 
+La ruta `/inspecciones` procesa la cola al montarse y al recibir el evento `online`, elimina el listener al desmontarse y evita ejecuciones simultáneas. Presenta estados pendiente, sincronizando, sincronizada, fallida y conflicto; ofrece sincronización y reintento manual, y muestra ambas versiones para resolver conflictos.
+
 ```bash
 npx vitest run tests/sync.spec.ts   # pruebas de conflictos
 npm ci && npm test && npm run build && npm run verify
 ```
 
 `make verify` equivale a `npm run verify` (en Windows se usa este último). La API sintética es en memoria y pierde su estado al reiniciar; no hay Background Sync.
+
+### Prueba manual y reproducible de Semana 5
+
+1. Ejecutar `npm ci --no-audit --no-fund`, `npm run build` y `npm start`; abrir `/inspecciones`.
+2. En DevTools → Network, activar **Offline**, guardar una inspección y recargar: debe conservarse en IndexedDB con estado **Pendiente**.
+3. Volver a **Online**: el evento `online` procesa la cola. También puede usarse **Sincronizar ahora**.
+4. Para observar **Fallida**, mantener la red desconectada hasta agotar los reintentos; al reconectar, pulsar **Reintentar sincronización**. El mismo `operationId` se reutiliza.
+5. Comprobar duplicados e idempotencia con `npx vitest run tests/queue.spec.ts`.
+6. Comprobar un conflicto 409, conservación de ambas versiones, bloqueo por inspección y ambas resoluciones con `npx vitest run tests/sync.spec.ts`.
+7. Comprobar inicio, reconexión, listener, exclusión mutua y controles de revisión con `npx vitest run tests/sync-ui.spec.tsx`.
+
+Limitaciones confirmadas: la API es sintética y guarda datos e idempotency keys solo en memoria; al reiniciar o usar varias instancias la idempotencia no es durable. No existe Background Sync ni una base remota real. Los envíos son seriales y el backoff de una operación retrasa temporalmente las demás. La resolución de un conflicto usa varias escrituras IndexedDB secuenciales, no una única transacción atómica.
 
 ## 14. Evidencia de la entrega
 
@@ -198,6 +217,8 @@ src/app/api/        endpoint interno (/api/inspecciones) con fallo determinista 
 src/components/     AppShell, componentes de estado (ui/) y registro SW
 src/lib/data/       datos sintéticos
 src/lib/pwa/        registro del Service Worker (register-service-worker.ts)
+src/lib/storage/    esquema y adaptador IndexedDB
+src/lib/sync/       cliente, cola, política de conflictos e integración con la UI
 public/             manifest, iconos, sw.js y offline.html
 tests/              pruebas Vitest (manifest, UI, service worker, offline, rendering CSR/SSR) y starter
 scripts/            verify.mjs
