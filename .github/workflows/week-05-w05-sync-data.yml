@@ -21,29 +21,23 @@ jobs:
         shell: bash
         run: |
           set -euo pipefail
-          npm ci --ignore-scripts --no-audit --no-fund
-      - name: AC-01 - Instalación limpia y build completan.
-        shell: bash
-        run: |
-          set -euo pipefail
-          test -f package.json && (test -f package-lock.json || test -f pnpm-lock.yaml || test -f yarn.lock) && npm run build --if-present
+          npm ci --no-audit --no-fund
       - name: AC-02 - Los artefactos declarados para la actividad existen.
         shell: bash
         run: |
           set -euo pipefail
           test -e 'src/lib/sync/queue.ts' && test -e 'src/lib/storage/schema.ts' && test -e 'src/lib/sync/conflict-policy.ts' && test -e 'docs/sync-policy.md' && test -e 'tests/sync.spec.ts'
-      - name: AC-03 - Existe una suite ejecutable de pruebas.
+      - name: AC-01 y AC-03 - Verificación técnica completa
         shell: bash
         run: |
           set -euo pipefail
-          test -d tests && find tests -type f -print -quit | grep -q . && npm run test --if-present -- --run
+          npm run verify
       - name: Upload evaluation artifacts
         if: always()
         uses: actions/upload-artifact@v4
         with:
           name: academic-evidence-w05-sync-data
-          if-no-files-found: ignore
+          if-no-files-found: error
           path: |
-            evaluation-result.json
-            coverage/
-            test-results/
+            reports/verification.json
+            vitest-report.json
