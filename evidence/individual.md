@@ -777,3 +777,100 @@ con el build y las pruebas.
 - **Prueba ejecutada:** `npm ci` — instalación reproducible sin errores. `npx vitest run tests/rendering.spec.tsx` — 5/5 pruebas en verde. `npm test` — 7 archivos, 62 pruebas en verde. `npm run verify` — «Verificación técnica: pass» (estructura + suite completa + `npm run build`, con `/inspecciones` estática y `/inspecciones/[id]` dinámica en el reporte de rutas).
 - **Limitación:** La prueba de `notFound()` verifica que la función se invoca, no que Next.js efectivamente sustituya la vista por `not-found.tsx`; esa parte se validó manualmente sobre el build de producción. La navegación y el precache del Service Worker no se actualizaron para `/inspecciones` (decisión documentada en `docs/rendering-decision.md`, no pendiente).
 - **Uso declarado de IA:** Utilicé Claude (Anthropic) para revisar el plan de la semana y el estado real del repositorio, redactar y depurar `tests/rendering.spec.tsx` (incluyendo la corrección de tres fallos reales encontrados al ejecutarlo), escribir `docs/rendering-decision.md`, actualizar `README.md` y `scripts/verify.mjs`, y redactar este borrador de evidencia. Validé el resultado ejecutando yo misma `npm ci`, `npm test` y `npm run verify` antes de aceptar los cambios.
+
+---
+
+# Evidencia individual — Semana 05
+
+## Integrante: Danna Tobon
+
+### 1. Rol / bloque individual
+
+Mi trabajo en la Semana 05 corresponde a la **persistencia local y captura
+offline de inspecciones**.
+
+### 2. Trabajo realizado
+
+- Definición del esquema de almacenamiento local y creación de
+  `src/lib/storage/schema.ts`.
+- Creación del adaptador nativo de IndexedDB en
+  `src/lib/storage/indexeddb.ts`.
+- Implementación de los almacenes `inspections`, `outbox` y `sync_meta`.
+- Guardado atómico de una inspección y su operación pendiente, junto con la
+  validación de datos antes del almacenamiento.
+- Integración de la captura de inspecciones sintéticas en `/inspecciones`, la
+  recuperación de registros locales después de recargar y la presentación de
+  su estado pendiente de sincronización.
+- Conservación de la ruta SSR `/inspecciones/[id]`; las inspecciones locales
+  pendientes no se enlazan a ese detalle porque el servidor no puede consultar
+  IndexedDB.
+- Actualización de los enlaces visibles del menú y la tarjeta de inicio para
+  utilizar la ruta canónica `/inspecciones`, conservando la ruta histórica
+  `/inspections`.
+- Creación de pruebas de persistencia con `fake-indexeddb` como dependencia de
+  desarrollo.
+
+### 3. Decisiones técnicas
+
+- Se eligió IndexedDB porque permite guardar datos estructurados, manejar
+  varios almacenes y utilizar transacciones en el navegador.
+- La inspección y su operación pendiente se guardan en una sola transacción.
+  Esto evita que exista una inspección sin su registro de sincronización o una
+  operación pendiente sin su inspección asociada.
+- El `operationId` se genera antes del envío y se conserva como identificador
+  estable, de modo que Fernando pueda implementar posteriormente la
+  idempotencia sin generar una identidad nueva en cada intento.
+
+### 4. Pruebas / verificaciones realizadas
+
+- `npx vitest run tests/storage.spec.ts` → **8/8 pruebas aprobadas**.
+- `npm test` → **9 archivos y 71/71 pruebas aprobadas**.
+- `npm run build` → **PASS**.
+- `npm run verify` → **«Verificación técnica: pass»**.
+- Prueba manual: se registró una inspección sintética desde `/inspecciones`, se
+  recargó la página y el registro permaneció disponible como pendiente de
+  sincronización.
+- Prueba manual de navegación: el menú y la tarjeta de inicio dirigen a
+  `/inspecciones`.
+
+### 5. Limitaciones / alcance actual
+
+- Esta rama todavía no envía operaciones al servidor.
+- Los reintentos y la idempotencia se integrarán con el bloque de Fernando.
+- La resolución manual de conflictos se integrará con el bloque de Tonantzin.
+- Las inspecciones pendientes no están disponibles en el detalle SSR.
+- IndexedDB y `crypto.randomUUID()` requieren compatibilidad del navegador.
+- La API sintética completa todavía no está integrada.
+
+Estas limitaciones describen el alcance actual del bloque de persistencia y
+captura offline; no se registran como errores sin resolver.
+
+### 6. Cambio que puedo defender o modificar en vivo
+
+Puedo explicar y modificar los tipos definidos en `schema.ts`, la creación de
+los almacenes de IndexedDB, la transacción que guarda la inspección y su
+operación pendiente, los estados de sincronización y la integración de la
+captura local en `/inspecciones`.
+
+### 7. Uso de IA
+
+- **Herramienta:** OpenCode con ChatGPT Plus.
+- **Propósito:** análisis del repositorio y del kit, apoyo en la implementación,
+  creación de pruebas y revisión de errores.
+- **Partes influenciadas:** esquema de almacenamiento, adaptador IndexedDB,
+  pruebas y captura offline.
+- **Validación humana:** revisión de los cambios, ejecución de pruebas, build y
+  verificación; comprobación manual de la captura, persistencia y navegación en
+  el navegador.
+
+### 8. Commits de Semana 05
+
+- `c54780cc40bf514936e732032b93038f6bea8865` —
+  `feat(storage): implementar persistencia offline de inspecciones` (SHA
+  principal de la contribución técnica).
+- `553880cfb0500ee3dcb1826acd7fe7cc99988519` —
+  `fix(navigation): usar ruta canonica de inspecciones` (trabajo
+  complementario).
+- `2edd020d441a273c0cd1451f513a83e04e854b24` —
+  `fix(navigation): actualizar acceso de inicio a inspecciones` (trabajo
+  complementario).

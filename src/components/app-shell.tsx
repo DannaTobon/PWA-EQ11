@@ -19,7 +19,7 @@ export function AppShell({ children }: AppShellProps) {
           <nav aria-label="Navegación principal">
             <ul className="app-nav-list">
               <li>
-                <Link href="/inspections" className="app-nav-link">
+                <Link href="/inspecciones" className="app-nav-link">
                   Inspecciones
                 </Link>
               </li>

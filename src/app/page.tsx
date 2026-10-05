@@ -24,7 +24,7 @@ export default function HomePage() {
         <div className="inspection-grid">
           <div className="inspection-card">
             <h3>
-              <Link href="/inspections">Inspecciones</Link>
+              <Link href="/inspecciones">Inspecciones</Link>
             </h3>
             <p>Consulta las inspecciones de los laboratorios registradas recientemente.</p>
           </div>

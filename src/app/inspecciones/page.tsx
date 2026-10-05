@@ -1,15 +1,55 @@
 "use client";
 
-import { useEffect, useState } from "react";
+import { type FormEvent, useEffect, useMemo, useState } from "react";
 import Link from "next/link";
-import { Inspection } from "@/lib/data/inspections";
+import type { Inspection, InspectionStatus } from "@/lib/data/inspections";
 import { LoadingState } from "@/components/ui/loading-state";
 import { ErrorState } from "@/components/ui/error-state";
+import { getAllInspections, saveInspectionWithOperation } from "@/lib/storage/indexeddb";
+import type { OutboxOperation, StoredInspection } from "@/lib/storage/schema";
+
+type CaptureForm = {
+  location: string;
+  date: string;
+  inspector: string;
+  status: InspectionStatus;
+  findings: string;
+  summary: string;
+};
+
+const INITIAL_FORM: CaptureForm = {
+  location: "Laboratorio Sintético",
+  date: "2026-09-29",
+  inspector: "Técnica Sintética",
+  status: "ok",
+  findings: "0",
+  summary: "Inspección sintética capturada sin conexión."
+};
+
+function errorMessage(error: unknown): string {
+  return error instanceof Error ? error.message : "Ha ocurrido un error inesperado.";
+}
+
+function newIdentifier(prefix: string): string {
+  if (typeof globalThis.crypto?.randomUUID !== "function") {
+    throw new Error("El navegador no permite generar identificadores locales seguros.");
+  }
+  return `${prefix}-${globalThis.crypto.randomUUID()}`;
+}
+
+function isPendingInspection(inspection: Inspection | StoredInspection): inspection is StoredInspection {
+  return "sync" in inspection && inspection.sync.status !== "done";
+}
 
 export default function InspeccionesPage() {
-  const [data, setData] = useState<Inspection[] | null>(null);
+  const [remoteInspections, setRemoteInspections] = useState<Inspection[]>([]);
+  const [localInspections, setLocalInspections] = useState<StoredInspection[]>([]);
   const [error, setError] = useState<Error | null>(null);
+  const [storageError, setStorageError] = useState<string | null>(null);
+  const [captureMessage, setCaptureMessage] = useState<string | null>(null);
   const [isLoading, setIsLoading] = useState(true);
+  const [isSaving, setIsSaving] = useState(false);
+  const [form, setForm] = useState<CaptureForm>(INITIAL_FORM);
 
   const fetchInspections = async () => {
     setIsLoading(true);
@@ -23,85 +63,232 @@ export default function InspeccionesPage() {
       if (!response.ok) {
         throw new Error("No se pudo obtener la lista de inspecciones.");
       }
-      const result = await response.json();
-      setData(result);
-    } catch (err: any) {
-      setError(new Error(err.message || "Ha ocurrido un error inesperado."));
+      const result = (await response.json()) as Inspection[];
+      setRemoteInspections(result);
+    } catch (caughtError) {
+      setError(new Error(errorMessage(caughtError)));
     } finally {
       setIsLoading(false);
     }
   };
 
+  const loadLocalInspections = async () => {
+    try {
+      setLocalInspections(await getAllInspections());
+      setStorageError(null);
+    } catch (caughtError) {
+      setStorageError(`No se pudo leer el almacenamiento local: ${errorMessage(caughtError)}`);
+    }
+  };
+
   useEffect(() => {
-    fetchInspections();
+    void fetchInspections();
+    void loadLocalInspections();
   }, []);
 
-  if (isLoading) {
-    return (
-      <div className="page-shell">
-        <LoadingState />
-      </div>
-    );
-  }
+  const visibleInspections = useMemo<Array<Inspection | StoredInspection>>(() => {
+    const byId = new Map<string, Inspection | StoredInspection>();
+    remoteInspections.forEach((inspection) => byId.set(inspection.id, inspection));
+    localInspections.forEach((inspection) => byId.set(inspection.id, inspection));
+    return Array.from(byId.values());
+  }, [localInspections, remoteInspections]);
 
-  if (error) {
-    return (
-      <div className="page-shell">
-        <ErrorState error={error} reset={fetchInspections} />
-      </div>
-    );
-  }
+  const captureInspection = async (event: FormEvent<HTMLFormElement>) => {
+    event.preventDefault();
+    setIsSaving(true);
+    setCaptureMessage(null);
+    setStorageError(null);
+
+    try {
+      const now = new Date().toISOString();
+      const entityId = newIdentifier("local-inspection");
+      const operationId = newIdentifier("operation");
+      const findings = Number(form.findings);
+      const statusLabel = form.status === "ok" ? "Sin incidencias" : "Requiere atención";
+
+      const payload: Inspection = {
+        id: entityId,
+        location: form.location.trim(),
+        date: form.date,
+        inspector: form.inspector.trim(),
+        status: form.status,
+        statusLabel,
+        findings,
+        summary: form.summary.trim()
+      };
+
+      const localInspection: StoredInspection = {
+        ...payload,
+        sync: {
+          status: "pending",
+          baseRevision: null,
+          pendingOperationId: operationId
+        }
+      };
+
+      const operation: OutboxOperation = {
+        operationId,
+        entityId,
+        type: "create",
+        payload,
+        baseRevision: null,
+        attempts: 0,
+        status: "pending",
+        createdAt: now,
+        updatedAt: now
+      };
+
+      await saveInspectionWithOperation(localInspection, operation);
+      setLocalInspections((current) => {
+        const withoutSameId = current.filter(({ id }) => id !== localInspection.id);
+        return [localInspection, ...withoutSameId];
+      });
+      setCaptureMessage("Inspección guardada localmente. Queda pendiente de sincronización.");
+      setForm(INITIAL_FORM);
+    } catch (caughtError) {
+      setStorageError(`No se pudo guardar la inspección local: ${errorMessage(caughtError)}`);
+    } finally {
+      setIsSaving(false);
+    }
+  };
 
   return (
     <div className="page-shell">
-      <div className="section-heading">
-        <div>
-          <p className="eyebrow">Visualización CSR</p>
-          <h2>Listado de Inspecciones</h2>
-        </div>
-        <div style={{ display: "flex", gap: "10px" }}>
-          <Link href="/inspecciones?fallar=1" className="btn btn-danger">
-            Forzar Error
-          </Link>
-          <button onClick={fetchInspections} className="btn btn-primary" aria-label="Actualizar datos">
-            Refrescar
-          </button>
-        </div>
-      </div>
-
-      <div className="inspection-grid">
-        {data?.map((inspection) => (
-          <div key={inspection.id} className="inspection-card">
-            <div className="card-topline">
-              <span className="eyebrow">{inspection.id}</span>
-              <span className={`badge ${inspection.status === "ok" ? "badge-ok" : "badge-attention"}`}>
-                {inspection.statusLabel}
-              </span>
-            </div>
-            <h3 style={{ margin: "12px 0 8px" }}>{inspection.location}</h3>
-            <p>{inspection.summary}</p>
-            <dl>
-              <div>
-                <dt>Fecha</dt>
-                <dd>{inspection.date}</dd>
-              </div>
-              <div>
-                <dt>Inspector</dt>
-                <dd>{inspection.inspector}</dd>
-              </div>
-            </dl>
-            <div style={{ marginTop: "20px", textAlign: "center" }}>
-              <Link 
-                href={`/inspecciones/${inspection.id}`}
-                className="btn btn-primary"
-                style={{ width: "100%" }}
-              >
-                Ver Detalle SSR
-              </Link>
-            </div>
+      <section className="content-section" aria-labelledby="offline-capture-heading">
+        <div className="section-heading">
+          <div>
+            <p className="eyebrow">Captura offline</p>
+            <h2 id="offline-capture-heading">Registrar inspección sintética</h2>
           </div>
-        ))}
-      </div>
+        </div>
+
+        <form className="inspection-card" onSubmit={captureInspection}>
+          <div style={{ display: "grid", gap: "12px", gridTemplateColumns: "repeat(auto-fit, minmax(210px, 1fr))" }}>
+            <label>
+              Laboratorio
+              <input
+                required
+                value={form.location}
+                onChange={(event) => setForm({ ...form, location: event.target.value })}
+              />
+            </label>
+            <label>
+              Fecha
+              <input
+                required
+                type="date"
+                value={form.date}
+                onChange={(event) => setForm({ ...form, date: event.target.value })}
+              />
+            </label>
+            <label>
+              Responsable sintético
+              <input
+                required
+                value={form.inspector}
+                onChange={(event) => setForm({ ...form, inspector: event.target.value })}
+              />
+            </label>
+            <label>
+              Estado
+              <select
+                value={form.status}
+                onChange={(event) => setForm({ ...form, status: event.target.value as InspectionStatus })}
+              >
+                <option value="ok">Sin incidencias</option>
+                <option value="attention">Requiere atención</option>
+              </select>
+            </label>
+            <label>
+              Hallazgos
+              <input
+                required
+                min="0"
+                step="1"
+                type="number"
+                value={form.findings}
+                onChange={(event) => setForm({ ...form, findings: event.target.value })}
+              />
+            </label>
+          </div>
+          <label style={{ display: "grid", gap: "6px", marginTop: "12px" }}>
+            Resumen sintético
+            <textarea
+              required
+              rows={3}
+              value={form.summary}
+              onChange={(event) => setForm({ ...form, summary: event.target.value })}
+            />
+          </label>
+          <button className="btn btn-primary" disabled={isSaving} style={{ marginTop: "16px" }} type="submit">
+            {isSaving ? "Guardando localmente…" : "Guardar sin conexión"}
+          </button>
+        </form>
+
+        {captureMessage ? <p role="status">{captureMessage}</p> : null}
+        {storageError ? <p className="muted">{storageError}</p> : null}
+      </section>
+
+      <section className="content-section" aria-labelledby="inspections-list-heading">
+        <div className="section-heading">
+          <div>
+            <p className="eyebrow">Visualización CSR</p>
+            <h2 id="inspections-list-heading">Listado de Inspecciones</h2>
+          </div>
+          <div style={{ display: "flex", gap: "10px" }}>
+            <Link href="/inspecciones?fallar=1" className="btn btn-danger">
+              Forzar Error
+            </Link>
+            <button onClick={fetchInspections} className="btn btn-primary" aria-label="Actualizar datos">
+              Refrescar
+            </button>
+          </div>
+        </div>
+
+        {isLoading ? <LoadingState /> : null}
+        {error ? <ErrorState error={error} reset={fetchInspections} /> : null}
+
+        <div className="inspection-grid">
+          {visibleInspections.map((inspection) => {
+            const pending = isPendingInspection(inspection);
+            return (
+              <div key={inspection.id} className="inspection-card">
+                <div className="card-topline">
+                  <span className="eyebrow">{inspection.id}</span>
+                  <span className={`badge ${pending ? "badge-attention" : inspection.status === "ok" ? "badge-ok" : "badge-attention"}`}>
+                    {pending ? "Pendiente de sincronización" : inspection.statusLabel}
+                  </span>
+                </div>
+                <h3 style={{ margin: "12px 0 8px" }}>{inspection.location}</h3>
+                <p>{inspection.summary}</p>
+                <dl>
+                  <div>
+                    <dt>Fecha</dt>
+                    <dd>{inspection.date}</dd>
+                  </div>
+                  <div>
+                    <dt>Inspector</dt>
+                    <dd>{inspection.inspector}</dd>
+                  </div>
+                </dl>
+                <div style={{ marginTop: "20px", textAlign: "center" }}>
+                  {pending ? (
+                    <span className="muted">El detalle estará disponible después de sincronizar.</span>
+                  ) : (
+                    <Link
+                      href={`/inspecciones/${inspection.id}`}
+                      className="btn btn-primary"
+                      style={{ width: "100%" }}
+                    >
+                      Ver Detalle SSR
+                    </Link>
+                  )}
+                </div>
+              </div>
+            );
+          })}
+        </div>
+      </section>
     </div>
   );
 }
