@@ -5,8 +5,10 @@ import Link from "next/link";
 import type { Inspection, InspectionStatus } from "@/lib/data/inspections";
 import { LoadingState } from "@/components/ui/loading-state";
 import { ErrorState } from "@/components/ui/error-state";
-import { getAllInspections, saveInspectionWithOperation } from "@/lib/storage/indexeddb";
+import { InspectionConflictReview } from "@/components/inspection-conflict-review";
+import { saveInspectionWithOperation } from "@/lib/storage/indexeddb";
 import type { OutboxOperation, StoredInspection } from "@/lib/storage/schema";
+import { useInspectionSync } from "@/lib/sync/use-inspection-sync";
 
 type CaptureForm = {
   location: string;
@@ -37,19 +39,30 @@ function newIdentifier(prefix: string): string {
   return `${prefix}-${globalThis.crypto.randomUUID()}`;
 }
 
-function isPendingInspection(inspection: Inspection | StoredInspection): inspection is StoredInspection {
-  return "sync" in inspection && inspection.sync.status !== "done";
+function isStoredInspection(inspection: Inspection | StoredInspection): inspection is StoredInspection {
+  return "sync" in inspection;
 }
 
 export default function InspeccionesPage() {
   const [remoteInspections, setRemoteInspections] = useState<Inspection[]>([]);
-  const [localInspections, setLocalInspections] = useState<StoredInspection[]>([]);
   const [error, setError] = useState<Error | null>(null);
   const [storageError, setStorageError] = useState<string | null>(null);
   const [captureMessage, setCaptureMessage] = useState<string | null>(null);
   const [isLoading, setIsLoading] = useState(true);
   const [isSaving, setIsSaving] = useState(false);
   const [form, setForm] = useState<CaptureForm>(INITIAL_FORM);
+  const {
+    inspections: localInspections,
+    operations,
+    conflicts,
+    syncingEntityIds,
+    isSynchronizing,
+    syncError,
+    refresh,
+    synchronize,
+    retry,
+    resolve
+  } = useInspectionSync();
 
   const fetchInspections = async () => {
     setIsLoading(true);
@@ -72,18 +85,8 @@ export default function InspeccionesPage() {
     }
   };
 
-  const loadLocalInspections = async () => {
-    try {
-      setLocalInspections(await getAllInspections());
-      setStorageError(null);
-    } catch (caughtError) {
-      setStorageError(`No se pudo leer el almacenamiento local: ${errorMessage(caughtError)}`);
-    }
-  };
-
   useEffect(() => {
     void fetchInspections();
-    void loadLocalInspections();
   }, []);
 
   const visibleInspections = useMemo<Array<Inspection | StoredInspection>>(() => {
@@ -139,10 +142,7 @@ export default function InspeccionesPage() {
       };
 
       await saveInspectionWithOperation(localInspection, operation);
-      setLocalInspections((current) => {
-        const withoutSameId = current.filter(({ id }) => id !== localInspection.id);
-        return [localInspection, ...withoutSameId];
-      });
+      await refresh();
       setCaptureMessage("Inspección guardada localmente. Queda pendiente de sincronización.");
       setForm(INITIAL_FORM);
     } catch (caughtError) {
@@ -229,6 +229,27 @@ export default function InspeccionesPage() {
         {storageError ? <p className="muted">{storageError}</p> : null}
       </section>
 
+      {conflicts.length > 0 ? (
+        <section className="content-section" aria-labelledby="conflicts-heading">
+          <div className="section-heading">
+            <div>
+              <p className="eyebrow">Revisión manual</p>
+              <h2 id="conflicts-heading">Conflictos de sincronización</h2>
+            </div>
+          </div>
+          <div style={{ display: "grid", gap: "16px" }}>
+            {conflicts.map((conflict) => (
+              <InspectionConflictReview
+                key={conflict.entityId}
+                conflict={conflict}
+                disabled={isSynchronizing}
+                onResolve={(entityId, decision) => void resolve(entityId, decision)}
+              />
+            ))}
+          </div>
+        </section>
+      ) : null}
+
       <section className="content-section" aria-labelledby="inspections-list-heading">
         <div className="section-heading">
           <div>
@@ -236,6 +257,14 @@ export default function InspeccionesPage() {
             <h2 id="inspections-list-heading">Listado de Inspecciones</h2>
           </div>
           <div style={{ display: "flex", gap: "10px" }}>
+            <button
+              onClick={() => void synchronize()}
+              className="btn btn-primary"
+              disabled={isSynchronizing}
+              aria-label="Sincronizar operaciones pendientes"
+            >
+              {isSynchronizing ? "Sincronizando…" : "Sincronizar ahora"}
+            </button>
             <Link href="/inspecciones?fallar=1" className="btn btn-danger">
               Forzar Error
             </Link>
@@ -247,16 +276,34 @@ export default function InspeccionesPage() {
 
         {isLoading ? <LoadingState /> : null}
         {error ? <ErrorState error={error} reset={fetchInspections} /> : null}
+        {syncError ? <p role="alert">No se pudo completar la sincronización: {syncError}</p> : null}
 
         <div className="inspection-grid">
           {visibleInspections.map((inspection) => {
-            const pending = isPendingInspection(inspection);
+            const stored = isStoredInspection(inspection);
+            const operation = stored
+              ? operations.find(({ operationId }) => operationId === inspection.sync.pendingOperationId)
+              : undefined;
+            const status = operation?.status ?? (stored ? inspection.sync.status : "done");
+            const syncing = stored && syncingEntityIds.has(inspection.id) && status === "pending";
+            const statusLabel = syncing
+              ? "Sincronizando"
+              : status === "pending"
+                ? "Pendiente"
+                : status === "inFlight"
+                  ? "Sincronizando"
+                  : status === "failed"
+                    ? "Fallida"
+                    : status === "conflict"
+                      ? "Conflicto: requiere revisión"
+                      : "Sincronizada";
+            const synchronized = status === "done";
             return (
               <div key={inspection.id} className="inspection-card">
                 <div className="card-topline">
                   <span className="eyebrow">{inspection.id}</span>
-                  <span className={`badge ${pending ? "badge-attention" : inspection.status === "ok" ? "badge-ok" : "badge-attention"}`}>
-                    {pending ? "Pendiente de sincronización" : inspection.statusLabel}
+                  <span className={`badge ${synchronized ? "badge-ok" : "badge-attention"}`}>
+                    {statusLabel}
                   </span>
                 </div>
                 <h3 style={{ margin: "12px 0 8px" }}>{inspection.location}</h3>
@@ -272,8 +319,14 @@ export default function InspeccionesPage() {
                   </div>
                 </dl>
                 <div style={{ marginTop: "20px", textAlign: "center" }}>
-                  {pending ? (
-                    <span className="muted">El detalle estará disponible después de sincronizar.</span>
+                  {status === "failed" && operation ? (
+                    <button className="btn btn-primary" disabled={isSynchronizing} onClick={() => void retry(operation.operationId)}>
+                      Reintentar sincronización
+                    </button>
+                  ) : !synchronized ? (
+                    <span className="muted">
+                      {status === "conflict" ? "Resuelve el conflicto para continuar." : "El detalle estará disponible después de sincronizar."}
+                    </span>
                   ) : (
                     <Link
                       href={`/inspecciones/${inspection.id}`}

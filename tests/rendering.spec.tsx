@@ -1,3 +1,4 @@
+import "fake-indexeddb/auto";
 import { describe, expect, it, vi, afterEach } from "vitest";
 import { render, screen, fireEvent, waitFor } from "@testing-library/react";
 import InspeccionesPage from "@/app/inspecciones/page";
