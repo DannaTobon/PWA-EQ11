@@ -874,3 +874,56 @@ captura local en `/inspecciones`.
 - `2edd020d441a273c0cd1451f513a83e04e854b24` —
   `fix(navigation): actualizar acceso de inicio a inspecciones` (trabajo
   complementario).
+
+## Integrante: Tonanzin
+
+### 1. Rol / bloque individual
+
+Mi trabajo en la Semana 05 corresponde a **conflictos de revisión, pruebas integrales y verificación** de la sincronización: política de revisión manual, resolución `keepLocal` / `acceptServer`, `tests/sync.spec.ts`, documentación, workflow y verificador acumulativo.
+
+### 2. Trabajo realizado
+
+- `src/lib/sync/conflict-policy.ts`: detección de conflicto comparando `baseRevision` con la revisión remota; registro de ambas versiones (local y remota) en `sync_meta`; la operación pasa a `conflict` y deja de reintentarse; bloqueo de las operaciones posteriores de la misma inspección mientras las de otras inspecciones continúan; resolución explícita con `keepLocal` (nueva operación con nuevo `operationId` sobre la revisión vigente) o `acceptServer` (actualiza el registro local y cierra el conflicto sin enviar otra mutación).
+- `tests/sync.spec.ts`: pruebas integrales de captura offline y recarga, conflicto con conservación de ambas versiones, bloqueo por inspección, continuidad de otra inspección, ambas resoluciones, reintento con el mismo `operationId` sin duplicados, respuesta antigua después de una nueva, recuperación tras interrupción y un caso integrado con un 409 real.
+- `docs/sync-policy.md`: política elegida, decisiones de detalle, límites y riesgos, y comandos para reproducir.
+- `.github/workflows/week-05-w05-sync-data.yml`: workflow de Semana 05 sin eliminar los anteriores. [AJUSTAR: indicar si se usó el workflow del kit del profesor o uno basado en el patrón de Semana 3.]
+- `scripts/verify.mjs` y `README.md`: archivos obligatorios de Semana 05 en el verificador y sección de sincronización y conflictos.
+- Cobertura por ausencia: dado que el integrante a cargo de la cola no pudo entregar su bloque, se incluyó una implementación mínima de `src/lib/sync/queue.ts`, `client.ts`, `api-store.ts`, el `POST` de `src/app/api/inspecciones/route.ts` y `tests/queue.spec.ts`, en un commit separado. [AJUSTAR: confirmar con el equipo si Fernando la adopta o si queda declarada como cobertura temporal.]
+
+### 3. Decisiones técnicas
+
+- **Revisión manual en lugar de «gana el servidor» o mezcla por campo:** una inspección contiene estado, hallazgos y resumen que deben permanecer coherentes entre sí. «Gana el servidor» haría parecer perdida una edición local y la mezcla por campo podría producir una inspección incoherente.
+- **Una operación en conflicto deja de reintentarse:** reenviarla con la misma revisión base volvería a producir el mismo 409; solo una decisión de una persona puede cambiar el resultado.
+- **Bloqueo por `entityId`, no de toda la cola:** conserva el orden de los cambios de una misma inspección sin detener los registros independientes.
+- **`operationId` determinista en `keepLocal`** (`<id original>:keepLocal:r<revisión>`): la resolución puede repetirse tras una interrupción sin crear operaciones duplicadas.
+- **Tras `acceptServer`, las operaciones en espera pasan a `failed` con su contenido y un motivo visible:** nacieron sobre la versión local rechazada y enviarlas pisaría la versión que se acaba de aceptar. [AJUSTAR: indicar si el equipo confirmó esta interpretación del paso 10 de la división de trabajo.]
+
+### 4. Pruebas / verificaciones realizadas
+
+| Comando | Entorno | Resultado real |
+|---|---|---|
+| `npm ci` | [COMPLETAR: SO, Node y npm] | [COMPLETAR: resultado que observaste] |
+| `npx vitest run tests/sync.spec.ts` | Igual | [COMPLETAR: archivos y pruebas en verde que observaste] |
+| `npm test` | Igual | [COMPLETAR] |
+| `npm run build` | Igual | [COMPLETAR] |
+| `npm run verify` | Igual | [COMPLETAR: «Verificación técnica: …»] |
+
+### 5. Limitaciones / alcance
+
+- Los pasos de resolución son escrituras secuenciales en IndexedDB y no una sola transacción, porque el adaptador solo ofrece transacción conjunta para inspección y operación. El orden elegido es seguro ante interrupciones, pero no atómico.
+- La API sintética está en memoria: pierde su estado y los `operationId` procesados al reiniciar el servidor y no cubre varias instancias.
+- La resolución requiere una acción de la persona usuaria; no hay Background Sync, por lo que la cola se reanuda al iniciar, con el evento `online` o con reintento manual.
+- La interfaz para mostrar y resolver conflictos corresponde a la integración de la interfaz; este bloque expone `listConflicts`, `getConflict` y `resolveConflict`.
+
+### 6. Cambio que podría defender o modificar en vivo
+
+`resolveConflict` en `src/lib/sync/conflict-policy.ts`: puedo explicar por qué `keepLocal` conserva el `createdAt` de la operación original (para ejecutarse antes de las que esperaban), por qué cierra el registro del conflicto como último paso, y modificar, por ejemplo, el tratamiento de las operaciones en espera tras `acceptServer`.
+
+### 7. Uso de IA
+
+Herramienta: Claude (Anthropic), en chat. Propósito: analizar el repositorio y la división de trabajo, proponer el diseño de la política de conflictos y de la cola, y redactar borradores de `conflict-policy.ts`, `queue.ts`, `client.ts`, `api-store.ts`, las pruebas, `docs/sync-policy.md`, el workflow y los cambios a `verify.mjs` y `README.md`. Validación humana: [COMPLETAR solo con lo que realmente hiciste, por ejemplo: leí el código, ejecuté las pruebas y la verificación indicadas en la sección 4 y revisé el diff antes de hacer commit].
+
+### 8. Commits de Semana 05
+
+- `308613e8688499195d7bfc85d3190e3f0d0ab5de` — feat(sync): política de conflictos, pruebas integrales y documentación
+- `7a1a91231099c416d986836f92a5d14bedac00ae` — feat(sync): cola, cliente e idempotencia (cobertura por ausencia de Fernando)
