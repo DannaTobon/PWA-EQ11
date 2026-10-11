@@ -112,8 +112,15 @@ Pendientes: módulo, control, persistencia auxiliar y pruebas con `MediaStream`/
 
 Pendientes: módulo, control, política concreta de timeout/redondeo y pruebas con callbacks y coordenadas sintéticas. No se ha solicitado ubicación real.
 
-### Notificaciones — pendiente (Danna)
+### Notificaciones — implementadas e integradas (Danna)
 
-Pendientes: cliente mediante service worker, control de habilitación, fallback accesible, integración posterior al guardado y pruebas con APIs mockeadas. No se ha implementado push remoto.
+- `enableLocalNotifications()` detecta soporte y contexto seguro, respeta permisos ya concedidos o denegados y solo llama `requestPermission()` cuando se invoca explícitamente con estado `default`. Un rechazo devuelve `error` y conservar `default` devuelve `cancelled`.
+- `showLocalNotification(message)` nunca solicita permiso. Consulta la inscripción existente con `getRegistration()`, exige un worker activo y llama `registration.showNotification`; los fallos de consulta o presentación son resultados controlados. No espera `serviceWorker.ready`, no registra workers y no usa el constructor `Notification`.
+- `NotificationControl` ofrece un botón explícito, bloquea solicitudes repetidas mientras están en curso y anuncia el resultado mediante un estado accesible. No ejecuta solicitudes al montar o renderizar.
+- `/inspecciones` integra el control y, solo después de guardar correctamente la inspección y su operación, dispara sin bloquear una notificación genérica. El `operationId` evita repetirla durante un rerender. El formulario mantiene siempre la confirmación accesible de guardado local; un permiso ausente o un fallo al mostrar la notificación no revierte ni presenta como fallido el guardado principal.
+- Pruebas ejecutadas: `npm exec vitest -- run tests/notifications.spec.ts tests/notifications-integration.spec.tsx` — 2 archivos y 19/19 pruebas aprobadas; `npm run verify` — prueba starter, 14 archivos y 123/123 pruebas Vitest aprobadas en cada ejecución del verificador, más build de producción correcto.
+- Durante la implementación, el primer build detectó que un helper de permiso podía devolver un éxito con datos incompatibles con `LocalNotificationDelivery`. Se corrigió separando los resultados exitosos del helper de fallos y la verificación completa posterior pasó.
+
+Limitaciones: la notificación depende de contexto seguro, permiso concedido y una inscripción activa previamente creada por el registro general de la aplicación. Confirma almacenamiento local, no sincronización. Sigue siendo una notificación local: no se implementaron Push API, VAPID, backend ni suscripciones remotas.
 
 La existencia de este acuerdo y de los tipos compartidos no declara terminados los módulos obligatorios ni la Semana 06.
