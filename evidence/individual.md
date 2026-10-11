@@ -927,3 +927,51 @@ Herramienta: Claude (Anthropic), en chat. Propósito: analizar el repositorio y 
 
 - `308613e8688499195d7bfc85d3190e3f0d0ab5de` — feat(sync): política de conflictos, pruebas integrales y documentación
 - `7a1a91231099c416d986836f92a5d14bedac00ae` — feat(sync): cola, cliente e idempotencia (cobertura por ausencia de Fernando)
+
+---
+
+# Evidencia individual — Semana 06
+
+## Integrante: Danna Tobon
+
+### 1. Bloque y archivos implementados
+
+Mi bloque corresponde a las **notificaciones locales mediante service worker**, su habilitación explícita, el fallback accesible y la integración posterior al guardado local de una inspección.
+
+- `src/lib/notifications/client.ts`: cliente seguro para SSR con `enableLocalNotifications()` y `showLocalNotification()`.
+- `src/components/device/NotificationControl.tsx`: control accesible para solicitar permiso mediante una acción explícita.
+- `src/app/inspecciones/page.tsx`: integración del control y disparo no bloqueante después de guardar correctamente la inspección y su operación.
+- `tests/notifications.spec.ts`: pruebas deterministas del cliente y sus fallbacks.
+- `tests/notifications-integration.spec.tsx`: pruebas del control y del evento de guardado local.
+- `docs/capabilities.md`: comportamiento, resultados y límites del bloque.
+
+### 2. Commit técnico
+
+- `7e0c73ca6500f79e2de84e3c8b996a7c32e8a3b0` — `feat(w06): integrar notificaciones locales con fallback accesible`.
+
+### 3. Decisión técnica
+
+Las notificaciones son locales y se muestran mediante `showNotification` de una inscripción activa del service worker. El permiso solo se solicita desde el botón de habilitación. Después de un guardado local exitoso se conserva primero una confirmación accesible dentro del formulario y se dispara una notificación genérica sin bloquearlo; un permiso ausente o un fallo de notificación no revierte el guardado ni afirma que la inspección ya se sincronizó.
+
+### 4. Pruebas y validación automatizada
+
+- `npm exec vitest -- run tests/notifications.spec.ts tests/notifications-integration.spec.tsx` → exit 0; 2 archivos y 19/19 pruebas aprobadas.
+- `npm run verify` → exit 0; prueba starter aprobada, 14 archivos y 123/123 pruebas Vitest aprobadas en cada ejecución del verificador, build de producción correcto y `Verificación técnica: pass`.
+- `git diff --check` → exit 0.
+- El primer `npm run verify` del desarrollo detectó un error de tipos en un helper de resultados de permiso. Se separaron los resultados exitosos de los fallos y las verificaciones posteriores pasaron.
+
+La cobertura automatizada comprueba importación sin APIs del navegador ni efectos secundarios, soporte y permisos, errores del service worker, habilitación explícita, guardado exitoso o fallido, fallback ante fallo de notificación, ausencia de bloqueo y ausencia de duplicados al rerenderizar. No se abrieron notificaciones ni se usaron dispositivos o servicios externos.
+
+### 5. Limitaciones
+
+- No hay Push API remota, VAPID, backend ni suscripciones push.
+- La presentación depende de contexto seguro, permiso concedido y una inscripción activa del service worker.
+- La notificación confirma almacenamiento local, no sincronización.
+- La validación humana de la aplicación en un navegador está pendiente; no se declara realizada.
+
+### 6. Uso de IA
+
+- **Herramienta:** OpenCode con GPT-5.6 Sol (OpenAI).
+- **Propósito:** revisar contratos y código existente, implementar el cliente y el control, diseñar mocks deterministas, integrar el evento posterior al guardado, diagnosticar el fallo de tipos y revisar documentación y diffs.
+- **Validación realizada:** ejecución automatizada de las pruebas enfocadas, del verificador completo, del build incluido en el verificador y de `git diff --check`.
+- **Validación humana:** pendiente de ejecución por Danna en el navegador.

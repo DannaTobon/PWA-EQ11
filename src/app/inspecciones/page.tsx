@@ -1,6 +1,6 @@
 "use client";
 
-import { type FormEvent, useEffect, useMemo, useState } from "react";
+import { type FormEvent, useEffect, useMemo, useRef, useState } from "react";
 import Link from "next/link";
 import type { Inspection, InspectionStatus } from "@/lib/data/inspections";
 import { LoadingState } from "@/components/ui/loading-state";
@@ -9,6 +9,8 @@ import { InspectionConflictReview } from "@/components/inspection-conflict-revie
 import { saveInspectionWithOperation } from "@/lib/storage/indexeddb";
 import type { OutboxOperation, StoredInspection } from "@/lib/storage/schema";
 import { useInspectionSync } from "@/lib/sync/use-inspection-sync";
+import { NotificationControl } from "@/components/device/NotificationControl";
+import { showLocalNotification } from "@/lib/notifications/client";
 
 type CaptureForm = {
   location: string;
@@ -51,6 +53,7 @@ export default function InspeccionesPage() {
   const [isLoading, setIsLoading] = useState(true);
   const [isSaving, setIsSaving] = useState(false);
   const [form, setForm] = useState<CaptureForm>(INITIAL_FORM);
+  const notifiedOperationIds = useRef(new Set<string>());
   const {
     inspections: localInspections,
     operations,
@@ -142,9 +145,19 @@ export default function InspeccionesPage() {
       };
 
       await saveInspectionWithOperation(localInspection, operation);
-      await refresh();
       setCaptureMessage("Inspección guardada localmente. Queda pendiente de sincronización.");
       setForm(INITIAL_FORM);
+
+      if (!notifiedOperationIds.current.has(operationId)) {
+        notifiedOperationIds.current.add(operationId);
+        void showLocalNotification({
+          title: "Inspección guardada",
+          body: "La inspección se guardó en este dispositivo.",
+          tag: "inspection-saved"
+        }).catch(() => {});
+      }
+
+      await refresh();
     } catch (caughtError) {
       setStorageError(`No se pudo guardar la inspección local: ${errorMessage(caughtError)}`);
     } finally {
@@ -220,12 +233,15 @@ export default function InspeccionesPage() {
               onChange={(event) => setForm({ ...form, summary: event.target.value })}
             />
           </label>
+          <div style={{ marginTop: "16px" }}>
+            <NotificationControl />
+          </div>
           <button className="btn btn-primary" disabled={isSaving} style={{ marginTop: "16px" }} type="submit">
             {isSaving ? "Guardando localmente…" : "Guardar sin conexión"}
           </button>
+          {captureMessage ? <p role="status">{captureMessage}</p> : null}
         </form>
 
-        {captureMessage ? <p role="status">{captureMessage}</p> : null}
         {storageError ? <p className="muted">{storageError}</p> : null}
       </section>
 
