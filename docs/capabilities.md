@@ -108,9 +108,20 @@ Archivos compartidos con integración secuencial:
 
 Pendientes: módulo, control, persistencia auxiliar y pruebas con `MediaStream`/tracks sintéticos. No se ha solicitado acceso a una cámara real.
 
-### Geolocalización — pendiente (Tonanzin)
+### Geolocalización — implementada (Tonanzin)
 
-Pendientes: módulo, control, política concreta de timeout/redondeo y pruebas con callbacks y coordenadas sintéticas. No se ha solicitado ubicación real.
+- `getCurrentLocation(options?)` (`src/lib/device/geolocation.ts`) realiza **una sola** lectura con `getCurrentPosition`. No usa `watchPosition`, no pide alta precisión (`enableHighAccuracy: false`) y no acepta caché por defecto (`maximumAge: 0`). Siempre resuelve con un `CapabilityResult`; nunca rechaza.
+- Resultados: `unsupported` (sin `navigator.geolocation`, incluido SSR), `permission-denied` (código 1), `error` (código 2, excepción síncrona, coordenadas no finitas o fuera de rango), `timeout` (código 3 o temporizador de resguardo) y `success` con `DeviceLocationAttachment` (`source: "device-api"`).
+- **Timeout:** 10 s por defecto, máximo 30 s; valores inválidos vuelven al predeterminado. Como algunos navegadores nunca invocan ningún callback si la persona ignora el aviso de permiso, un temporizador de resguardo (timeout + 2 s) resuelve `timeout`; un callback tardío se ignora.
+- **Redondeo (decisión del equipo):** latitud y longitud a 4 decimales (≈ 11 m) y precisión al metro entero. Se eligió porque basta para ubicar un laboratorio y evita conservar más resolución de la necesaria. Alternativa descartada: guardar la lectura cruda.
+- `LocationControl` (`src/components/device/LocationControl.tsx`) solo llama a `getCurrentLocation` desde el botón «Obtener ubicación», bloquea solicitudes repetidas, permite «Quitar ubicación», anuncia el estado con `role="status"` y no actualiza estado ni notifica si se desmonta durante la lectura. Expone `onChange(location | undefined)` e `initialValue`; la persistencia y la integración en la página no las hace este componente.
+- Los datos de ubicación son locales: no viajan en la outbox ni al backend.
+- Pruebas propias (`tests/geolocation.spec.ts`): coordenadas ficticias válidas, API ausente y SSR, permiso denegado, posición no disponible, timeout (navegador y resguardo), callback tardío, lectura única sin `watchPosition` ni alta precisión, acotación de opciones, coordenadas inválidas, excepción síncrona, importación sin `navigator` y comportamiento del control.
+- Pruebas transversales (`tests/capabilities.spec.ts`) sobre la página real, el cliente real de notificaciones y almacenamiento real con `fake-indexeddb`: guardar sin capacidades, con permisos denegados, sin solicitudes automáticas de permiso o ubicación, notificación fallida sin afectar el guardado y notificación sin afirmar sincronización.
+
+Pendientes (marcados como `it.todo`, no simulados): persistir y recuperar evidencia/ubicación y fallo del almacenamiento auxiliar dependen de `capabilities-storage.ts` (Fernando); el caso de ubicación denegada desde la página depende de que Danna integre `LocationControl` en `/inspecciones`.
+
+Limitación: la precisión depende del dispositivo; en escritorio puede ser una ubicación aproximada por red. Una lectura real nunca se etiqueta como sintética.
 
 ### Notificaciones — implementadas e integradas (Danna)
 
