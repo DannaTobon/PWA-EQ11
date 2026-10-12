@@ -975,3 +975,48 @@ La cobertura automatizada comprueba importación sin APIs del navegador ni efect
 - **Propósito:** revisar contratos y código existente, implementar el cliente y el control, diseñar mocks deterministas, integrar el evento posterior al guardado, diagnosticar el fallo de tipos y revisar documentación y diffs.
 - **Validación realizada:** ejecución automatizada de las pruebas enfocadas, del verificador completo, del build incluido en el verificador y de `git diff --check`.
 - **Validación humana:** pendiente de ejecución por Danna en el navegador.
+
+## Integrante: Tonanzin
+
+### 1. Bloque y archivos implementados
+
+Mi bloque es la **geolocalización puntual y el control de ubicación opcional**, más la coordinación de las pruebas de integración transversales.
+
+- `src/lib/device/geolocation.ts`: `getCurrentLocation()`.
+- `src/components/device/LocationControl.tsx`: control accesible de ubicación.
+- `tests/geolocation.spec.ts`: pruebas del módulo y del control.
+- `tests/capabilities.spec.ts`: integración transversal.
+- `docs/capabilities.md`: sección de geolocalización.
+
+### 2. Commit técnico
+
+- `a5b414e4c7fc57c9ddb100ae2d86c03560745ac1` — `feat(w06): geolocalización puntual, control de ubicación y pruebas de integración` (rama `feature/w06-geolocation-tonanzin`).
+
+### 3. Decisión técnica
+
+Una sola lectura con `getCurrentPosition`, sin `watchPosition` ni alta precisión, con timeout acotado y un temporizador de resguardo para no esperar indefinidamente si el navegador no responde. Las coordenadas se redondean a 4 decimales (≈ 11 m). La razón es conservar solo la resolución necesaria para ubicar un laboratorio y garantizar que una capacidad opcional nunca bloquee el guardado.
+
+### 4. Pruebas y validación automatizada
+
+Ejecutadas en mi equipo (Windows, Node v20.19.0; `.nvmrc` indica 20.19.6, diferencia de parche dentro del rango `engines` >=20.19.0):
+
+- `npm ci` → instalación completada (198 paquetes).
+- `npm run verify` → `Verificación técnica: pass`; 16 archivos y 147 pruebas aprobadas con 3 `todo`, tanto en la prueba starter como en la corrida del manifiesto; build de producción correcto.
+- Dentro de esa corrida: `tests/geolocation.spec.ts` 18/18 pruebas aprobadas y `tests/capabilities.spec.ts` 9 pruebas (6 aprobadas y 3 `todo`).
+
+Los mensajes de `stderr` de `rendering.spec.tsx` y `ui-states.spec.tsx` (`NEXT_NOT_FOUND`, «Error capturado por ErrorState») corresponden a pruebas que provocan errores a propósito y no son fallos.
+
+### 5. Limitaciones
+
+- Los 3 escenarios `todo` de `capabilities.spec.ts` dependen de `capabilities-storage.ts` (Fernando) y de la integración de `LocationControl` en la página (Danna); no están implementados ni declarados como cubiertos.
+- `LocationControl` aún no está conectado a `/inspecciones` ni a la persistencia.
+- La precisión depende del dispositivo y la validación en un navegador real está pendiente.
+
+### 6. Uso de IA
+
+- **Herramienta:** Claude (Anthropic), en chat.
+- **Propósito:** analizar el repositorio y el reparto de Semana 06, redactar `geolocation.ts`, `LocationControl.tsx`, las pruebas y la sección de documentación de geolocalización, y preparar los comandos de Git.
+- **Validación humana realizada:**
+  - Ejecuté `npm ci` y `npm run verify` en mi equipo; ambos terminaron correctamente (resultados en la sección 4).
+  - Revisé con `git status --short` que solo se incluyeran los archivos de mi bloque.
+- **Validación humana pendiente:** probar el control de ubicación en un navegador con coordenadas simuladas y revisar el diff completo antes del PR.
