@@ -69,9 +69,42 @@ describe("register-service-worker", () => {
 });
 
 describe("register-service-worker runtime", () => {
-  it("llama navigator.serviceWorker.register('/sw.js', { scope: '/' }) tras el evento load", () => {
+  const withServiceWorker = (register: ReturnType<typeof vi.fn>, run: () => void) => {
+    const originalDescriptor = Object.getOwnPropertyDescriptor(navigator, "serviceWorker");
+    Object.defineProperty(navigator, "serviceWorker", {
+      value: { register },
+      configurable: true
+    });
+
+    try {
+      run();
+    } finally {
+      if (originalDescriptor) {
+        Object.defineProperty(navigator, "serviceWorker", originalDescriptor);
+      } else {
+        delete (navigator as { serviceWorker?: unknown }).serviceWorker;
+      }
+    }
+  };
+
+  it("registra de inmediato cuando la página ya terminó de cargar (hidratación tardía)", () => {
+    const register = vi.fn().mockResolvedValue({});
+    const addListenerSpy = vi.spyOn(window, "addEventListener");
+    vi.spyOn(document, "readyState", "get").mockReturnValue("complete");
+
+    withServiceWorker(register, () => {
+      registerServiceWorker();
+
+      expect(register).toHaveBeenCalledTimes(1);
+      expect(register).toHaveBeenCalledWith("/sw.js", { scope: "/" });
+      expect(addListenerSpy).not.toHaveBeenCalledWith("load", expect.anything(), expect.anything());
+    });
+  });
+
+  it("espera al evento load cuando el documento aún está cargando", () => {
     const register = vi.fn().mockResolvedValue({});
     const loadCallbacks: Array<() => void> = [];
+    vi.spyOn(document, "readyState", "get").mockReturnValue("loading");
 
     const addListenerSpy = vi
       .spyOn(window, "addEventListener")
@@ -81,28 +114,16 @@ describe("register-service-worker runtime", () => {
         }
       }) as typeof window.addEventListener);
 
-    const originalDescriptor = Object.getOwnPropertyDescriptor(navigator, "serviceWorker");
-    try {
-      Object.defineProperty(navigator, "serviceWorker", {
-        value: { register },
-        configurable: true
-      });
-
+    withServiceWorker(register, () => {
       registerServiceWorker();
 
       expect(register).not.toHaveBeenCalled();
 
-      for (const cb of loadCallbacks) cb();
+      for (const callback of loadCallbacks) callback();
 
       expect(register).toHaveBeenCalledTimes(1);
       expect(register).toHaveBeenCalledWith("/sw.js", { scope: "/" });
-    } finally {
-      if (originalDescriptor) {
-        Object.defineProperty(navigator, "serviceWorker", originalDescriptor);
-      } else {
-        delete (navigator as { serviceWorker?: unknown }).serviceWorker;
-      }
-      addListenerSpy.mockRestore();
-    }
+      expect(addListenerSpy).toHaveBeenCalledWith("load", expect.any(Function), { once: true });
+    });
   });
 });
