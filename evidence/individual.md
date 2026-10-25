@@ -1020,3 +1020,41 @@ Los mensajes de `stderr` de `rendering.spec.tsx` y `ui-states.spec.tsx` (`NEXT_N
   - Ejecuté `npm ci` y `npm run verify` en mi equipo; ambos terminaron correctamente (resultados en la sección 4).
   - Revisé con `git status --short` que solo se incluyeran los archivos de mi bloque.
 - **Validación humana pendiente:** probar el control de ubicación en un navegador con coordenadas simuladas y revisar el diff completo antes del PR.
+
+## Semana 08 — Danna
+
+- **Grupo y equipo:** DMI-EQ11C / PWA-EQ11
+- **Mi contribución de esta semana y enlace:**
+  Pruebas unitarias de validación y de reglas de cola/idempotencia
+  (`tests/unit/validation.spec.ts`, `tests/unit/queue-rules.spec.ts`) y corrección de tres
+  fallos reales: registro del Service Worker tras la hidratación, visualización de datos
+  locales antes de reintentar sin conexión y un falso positivo de lint por el nombre
+  `useDatabase`. Rama `test/w08-unit-danna` (commits `efc94f2`, `4a284ff`, `29ba7b7`,
+  `9d19d87`). PR: pendiente de abrir; enlace de creación:
+  <https://github.com/DannaTobon/PWA-EQ11/compare/main...test/w08-unit-danna?expand=1>.
+- **Decisión técnica y motivo:**
+  Separé las reglas puras (validación y selección/confirmación de la cola) en pruebas
+  unitarias porque localizan el fallo sin navegador y son deterministas. El flujo real de
+  offline se reserva para integración/E2E. Corregí el registro del SW porque el listener de
+  `load` se agregaba después de que el evento ya había ocurrido; sin eso ninguna prueba E2E
+  de offline podía ser honesta. También evité que una recarga sin conexión agotara los
+  reintentos antes de mostrar IndexedDB.
+- **Prueba/comando que ejecuté:**
+  `npx vitest run tests/unit` y `npm test`; además, diagnóstico manual con Chromium
+  (`npm run build && npm start`, modo offline, recarga y reconexión).
+- **Resultado observado y enlace al reporte:**
+  50 pruebas unitarias nuevas aprobadas; suite completa 199 aprobadas y 3 `todo`; build
+  correcto. En el diagnóstico, la tarjeta reaparece como `Pendiente` tras recargar offline
+  y pasa a `Sincronizada` al reconectar, sin duplicarse. El run de Actions se enlazará al
+  abrir el PR; mientras tanto, la rama y los commits están en
+  <https://github.com/DannaTobon/PWA-EQ11/tree/test/w08-unit-danna>.
+- **Qué demuestra y qué no demuestra:**
+  Demuestra que las reglas de validación y de cola rechazan entradas inválidas y no
+  duplican confirmaciones, y que el registro del SW y la recarga offline funcionan en
+  Chromium. No demuestra el flujo E2E completo: eso queda en las pruebas de Fernando.
+- **Limitación o riesgo:**
+  `/inspecciones` solo queda en caché después de visitarla; un arranque en frío totalmente
+  offline cae en `offline.html`. El receptor del servidor es en memoria y de una instancia.
+- **IA:** Usé OpenCode (agente de codificación) para el diagnóstico, la redacción inicial de
+  las pruebas y las correcciones; revisé cada diff, ejecuté los comandos y validé el flujo
+  en el navegador. La decisión y la responsabilidad del código son mías.
