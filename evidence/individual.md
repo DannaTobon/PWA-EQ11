@@ -1030,8 +1030,7 @@ Los mensajes de `stderr` de `rendering.spec.tsx` y `ui-states.spec.tsx` (`NEXT_N
   fallos reales: registro del Service Worker tras la hidratación, visualización de datos
   locales antes de reintentar sin conexión y un falso positivo de lint por el nombre
   `useDatabase`. Rama `test/w08-unit-danna` (commits `efc94f2`, `4a284ff`, `29ba7b7`,
-  `9d19d87`). PR: pendiente de abrir; enlace de creación:
-  <https://github.com/DannaTobon/PWA-EQ11/compare/main...test/w08-unit-danna?expand=1>.
+  `9d19d87`). PR: <https://github.com/DannaTobon/PWA-EQ11/pull/16>.
 - **Decisión técnica y motivo:**
   Separé las reglas puras (validación y selección/confirmación de la cola) en pruebas
   unitarias porque localizan el fallo sin navegador y son deterministas. El flujo real de
@@ -1045,9 +1044,9 @@ Los mensajes de `stderr` de `rendering.spec.tsx` y `ui-states.spec.tsx` (`NEXT_N
 - **Resultado observado y enlace al reporte:**
   50 pruebas unitarias nuevas aprobadas; suite completa 199 aprobadas y 3 `todo`; build
   correcto. En el diagnóstico, la tarjeta reaparece como `Pendiente` tras recargar offline
-  y pasa a `Sincronizada` al reconectar, sin duplicarse. El run de Actions se enlazará al
-  abrir el PR; mientras tanto, la rama y los commits están en
-  <https://github.com/DannaTobon/PWA-EQ11/tree/test/w08-unit-danna>.
+  y pasa a `Sincronizada` al reconectar, sin duplicarse. PR y checks verdes:
+  <https://github.com/DannaTobon/PWA-EQ11/pull/16/checks>; run de la rama:
+  <https://github.com/DannaTobon/PWA-EQ11/actions?query=branch%3Atest%2Fw08-unit-danna>.
 - **Qué demuestra y qué no demuestra:**
   Demuestra que las reglas de validación y de cola rechazan entradas inválidas y no
   duplican confirmaciones, y que el registro del SW y la recarga offline funcionan en
