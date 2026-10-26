@@ -3,7 +3,7 @@ import { resolve } from "node:path";
 import { spawnSync } from "node:child_process";
 
 const root = resolve(import.meta.dirname, "..");
-const required = ["package.json", "package-lock.json", "README.md", "src/app/layout.tsx", "src/app/page.tsx", "src/app/globals.css", "src/lib/data/inspections.ts", "docs/requirements.md", "docs/decision-record.md", "docs/cache-strategy.md", "tests/starter.spec.mjs", "tests/service-worker.spec.ts", "tests/offline.spec.ts", "public/sw.js", "src/lib/pwa/register-service-worker.ts", "evidence/individual.md", "src/app/inspecciones/page.tsx", "src/app/inspecciones/[id]/page.tsx", "src/app/api/inspecciones/route.ts", "tests/rendering.spec.tsx", "docs/rendering-decision.md", "src/lib/storage/schema.ts", "src/lib/storage/indexeddb.ts", "src/lib/sync/queue.ts", "src/lib/sync/conflict-policy.ts", "tests/storage.spec.ts", "tests/queue.spec.ts", "tests/sync.spec.ts", "docs/sync-policy.md", ".github/workflows/week-05-w05-sync-data.yml"];
+const required = ["package.json", "package-lock.json", "README.md", "src/app/layout.tsx", "src/app/page.tsx", "src/app/globals.css", "src/lib/data/inspections.ts", "docs/requirements.md", "docs/decision-record.md", "docs/cache-strategy.md", "tests/starter.spec.mjs", "tests/service-worker.spec.ts", "tests/offline.spec.ts", "public/sw.js", "src/lib/pwa/register-service-worker.ts", "evidence/individual.md", "src/app/inspecciones/page.tsx", "src/app/inspecciones/[id]/page.tsx", "src/app/api/inspecciones/route.ts", "tests/rendering.spec.tsx", "docs/rendering-decision.md", "src/lib/storage/schema.ts", "src/lib/storage/indexeddb.ts", "src/lib/sync/queue.ts", "src/lib/sync/conflict-policy.ts", "tests/storage.spec.ts", "tests/queue.spec.ts", "tests/sync.spec.ts", "docs/sync-policy.md", ".github/workflows/week-05-w05-sync-data.yml", "tests/unit/validation.spec.ts", "tests/unit/queue-rules.spec.ts", "tests/integration/offline-persistence.spec.ts", "tests/integration/duplicate-sync.spec.ts", "tests/e2e/offline-sync.spec.ts", "tests/e2e/capability-denied.spec.ts", "docs/test-strategy.md", ".github/workflows/academic-evaluation.yml", "playwright.config.ts", ".eslintrc.json"];
 const missing = required.filter(file => !existsSync(resolve(root, file)));
 const structureOnly = process.argv.includes("--structure");
 if (structureOnly) {
@@ -12,7 +12,14 @@ if (structureOnly) {
 }
 const checks = [{ id: "structure", status: missing.length ? "fail" : "pass", missing }];
 const npm = process.platform === "win32" ? "npm.cmd" : "npm";
-for (const [id, args] of [["test", ["test"]], ["vitest", ["run", "test:manifest"]], ["build", ["run", "build"]]]) {
+const steps = [
+  ["lint", ["run", "lint"]],
+  ["typecheck", ["run", "typecheck"]],
+  ["starter", ["run", "test:starter"]],
+  ["coverage", ["run", "test:coverage"]],
+  ["build", ["run", "build"]]
+];
+for (const [id, args] of steps) {
   console.log(`\nVerificando ${id}...`);
   const run = spawnSync(npm, args, { cwd: root, encoding: "utf8", shell: process.platform === "win32", maxBuffer: 20 * 1024 * 1024 });
   if (run.stdout) process.stdout.write(run.stdout);
@@ -34,7 +41,7 @@ const result = {
   status: checks.every(c => c.status === "pass") ? "pass" : "fail",
   checks,
   academicReview: { status: "pending", message: "Sin calificación automática. Revisar requisitos, decisión y evidencia por integrante con la rúbrica; existencia no implica calidad.", documents },
-  limits: ["La instalación se verifica mediante npm ci por separado.", "No certifica ausencia de secretos.", "Las pruebas proporcionadas no cubren toda la aplicación."]
+  limits: ["La instalación se verifica mediante npm ci por separado.", "No certifica ausencia de secretos.", "Las pruebas proporcionadas no cubren toda la aplicación.", "verify no ejecuta las pruebas E2E; verify:full sí las ejecuta y requiere Chromium instalado.", "La cobertura de Vitest no mide E2E ni código que solo se ejecuta en el navegador."]
 };
 mkdirSync(resolve(root, "reports"), { recursive: true });
 writeFileSync(resolve(root, "reports/verification.json"), JSON.stringify(result, null, 2) + "\n");

@@ -299,3 +299,8 @@ Las nuevas pruebas de Semana 08 **agregan** aserciones directas y la capa E2E; n
 - El receptor del servidor (`src/lib/sync/api-store.ts`) es en memoria y de una sola instancia; `workers: 1` garantiza aislamiento suficiente para las pruebas.
 - `/inspecciones` solo se cachea después de visitarla; un arranque en frío totalmente offline cae en `offline.html`. El flujo E2E lo visita antes de desconectar.
 
+### 16.7 Pruebas de integración y defecto controlado (Tonanzin)
+
+- `tests/integration/offline-persistence.spec.ts`: persistencia tras cerrar y reabrir IndexedDB, atomicidad de `saveInspectionWithOperation` y aislamiento entre inspecciones.
+- `tests/integration/duplicate-sync.spec.ts`: cola real contra el receptor real en memoria; reintento tras respuesta perdida, misma clave de idempotencia, conflicto de revisión y recuperación de operaciones `inFlight`.
+- Estas pruebas deben fallar si se quita la guarda de idempotencia de `src/lib/sync/api-store.ts`. El procedimiento del defecto controlado (run rojo, reversión y run verde) y sus enlaces están en `docs/test-strategy.md`, sección 7.

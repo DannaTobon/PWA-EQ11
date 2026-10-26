@@ -1167,3 +1167,56 @@ Ejecutadas en entorno Windows con Node v22.22.0:
   `npm run typecheck` y `npm run test:coverage` localmente, y confirmé que la suite completa
   pasa antes de hacer commit. La decisión de `workers: 1` y la elección de qué cubrir con
   E2E son mías.
+
+## Semana 08 — Tonanzin
+
+- **Grupo y equipo:** DMI-EQ11C / PWA-EQ11
+- **Mi contribución de esta semana y enlace:**
+  Capa de integración y CI de Semana 08: `tests/integration/offline-persistence.spec.ts`
+  (persistencia tras reabrir IndexedDB, atomicidad y aislamiento) y
+  `tests/integration/duplicate-sync.spec.ts` (reintento idempotente, misma clave dos veces,
+  conflicto y recuperación de operaciones `inFlight`), `docs/test-strategy.md`,
+  `.github/workflows/academic-evaluation.yml`, actualización de `scripts/verify.mjs` y de
+  `README.md` (sección 16.7), y el defecto controlado de idempotencia. Rama
+  `test/w08-integration-tonanzin`; PR: `<enlace al PR #3>`; commit de código: `<SHA-TONANZIN>`.
+- **Decisión técnica y motivo:**
+  Probé la idempotencia contra el receptor real en memoria (`applyMutation`) y la cola real, no
+  solo con mocks, porque el defecto vive en la guarda del servidor: un mock que siempre responde
+  bien no lo detectaría. Para distinguir un reintento de un duplicado simulé una respuesta
+  perdida: el servidor aplica la mutación, el cliente no recibe respuesta y reintenta con el mismo
+  `operationId`. También agregué una prueba de atomicidad que hace fallar la escritura del outbox
+  a mitad de la transacción y comprueba que la inspección se revierte.
+- **Prueba/comando que ejecuté:**
+  ```powershell
+  npm ci
+  npm run lint
+  npm run typecheck
+  npm run test:unit
+  npm run test:integration
+  npm run test:coverage
+  npm run build
+  npx playwright install chromium
+  npm run test:e2e
+  npm run verify
+  ```
+- **Resultado observado y enlace al reporte:**
+  `npm run test:integration`: 11 pruebas aprobadas (6 de persistencia y 5 de sincronización).
+  Suite completa con cobertura: 22 archivos, 237 aprobadas y 3 `todo`. Lint sin errores (una
+  advertencia previa por `<img>` en `CameraEvidenceControl.tsx`), tipos y build correctos.
+  Antes del run rojo comprobé en local que, sin la guarda de idempotencia, fallan 2 de las 11
+  pruebas de integración. E2E local: `<resultado de npm run test:e2e>` E2E local: 2 pruebas aprobadas en Chromium (flujo offline y permiso denegado), 7.2 s..
+  Run rojo del defecto controlado: `<URL del run rojo>`. Run verde tras revertir: `<URL del run verde>`.
+  Run final en `main`: `<URL del run verde del SHA final>`.
+- **Qué demuestra y qué no demuestra:**
+  Demuestra que un reintento con el mismo `operationId` no crea otro registro ni avanza la
+  revisión, que una captura no queda a medias y que un conflicto bloquea solo su inspección.
+  No demuestra el comportamiento de IndexedDB en un navegador real (eso lo cubre el E2E de
+  Fernando) ni durabilidad del servidor.
+- **Limitación o riesgo:**
+  El receptor (`src/lib/sync/api-store.ts`) es en memoria y de una sola instancia, no una base de
+  datos real ni multinstancia. `fake-indexeddb` no reproduce todos los matices de un navegador.
+  La cobertura no mide E2E y no equivale a calidad.
+- **IA:** Usé Claude (Anthropic) para leer el plan y el repositorio, redactar las pruebas de
+  integración, `docs/test-strategy.md`, el workflow y los cambios de `verify.mjs`. Revisé cada
+  archivo, ejecuté los comandos y comprobé en local que las pruebas fallan sin la guarda de
+  idempotencia. La decisión técnica y la responsabilidad del contenido son mías.

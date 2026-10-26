@@ -1,0 +1,55 @@
+# Workflow académico de Semana 08. Es retroalimentación formativa; la
+# calificación final usa el commit fijado y los checks privados del docente.
+name: Academic Evaluation — Week 08
+on:
+  push:
+  pull_request:
+  workflow_dispatch:
+permissions:
+  contents: read
+concurrency:
+  group: academic-evaluation-${{ github.ref }}
+  cancel-in-progress: true
+jobs:
+  evaluate:
+    runs-on: ubuntu-latest
+    timeout-minutes: 30
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+      - name: Setup Node
+        uses: actions/setup-node@v4
+        with:
+          node-version: "20.19.6"
+          cache: npm
+      - name: Install dependencies
+        run: npm ci --no-audit --no-fund
+      - name: Lint
+        run: npm run lint
+      - name: Typecheck
+        run: npm run typecheck
+      - name: Unit tests
+        run: npm run test:unit
+      - name: Integration tests
+        run: npm run test:integration
+      - name: Coverage report
+        run: npm run test:coverage
+      - name: Build
+        run: npm run build
+      - name: Install Playwright Chromium
+        run: npx playwright install --with-deps chromium
+      - name: E2E
+        run: npm run test:e2e
+      - name: Upload reports
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: academic-evidence-w08-${{ github.run_id }}
+          if-no-files-found: warn
+          retention-days: 14
+          path: |
+            coverage/
+            vitest-report.json
+            test-results/
+            playwright-report/
+            reports/verification.json
