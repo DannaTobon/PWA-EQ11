@@ -48,8 +48,7 @@ export function applyMutation(input: unknown, idempotencyKey?: string | null): M
 
   // Misma operación: mismo resultado, sin crear otro registro.
   const previous = processed.get(operationId);
-  //Defecto controlado de la semana 08
-  //if (previous) return previous;
+  if (previous) return previous;
 
   const current = records.get(entityId);
   if (!current && baseRevision !== null) {
