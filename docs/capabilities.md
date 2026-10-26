@@ -104,9 +104,33 @@ Archivos compartidos con integración secuencial:
 
 ## 9. Estado de implementación
 
-### Cámara — pendiente (Fernando)
+### Cámara y almacenamiento auxiliar — implementados (Fernando)
 
-Pendientes: módulo, control, persistencia auxiliar y pruebas con `MediaStream`/tracks sintéticos. No se ha solicitado acceso a una cámara real.
+- `startCamera()` / `requestCameraStream()` (`src/lib/device/camera.ts`):
+  - Detección de soporte segura para SSR (`typeof navigator !== "undefined"` y `mediaDevices.getUserMedia`).
+  - Solicita estrictamente video sin audio (`{ video: true, audio: false }`).
+  - Mapeo determinista de errores: `NotAllowedError` / `PermissionDeniedError` → `permission-denied`, `AbortError` → `cancelled`, APIs ausentes → `unsupported`, falta de pistas de video o excepciones → `error`.
+  - Liberación segura e idempotente de tracks con `releaseStream()` / `releaseCameraStream()`.
+- `captureFrame()` / `captureEvidence()` (`src/lib/device/camera.ts`):
+  - Captura el frame mediante canvas 2D a formato JPEG (`image/jpeg`, calidad 0.85).
+  - Valida dimensiones del elemento de video y tamaño máximo (`MAX_IMAGE_BYTES = 2 * 1024 * 1024`).
+  - Genera un `DeviceEvidenceAttachment` con `source: "device-api"` y fecha ISO.
+- `CameraEvidenceControl` (`src/components/device/CameraEvidenceControl.tsx`):
+  - Solo solicita acceso a la cámara mediante interacción explícita del usuario («Abrir cámara»).
+  - Ofrece vista previa en vivo, captura, vista previa de imagen capturada, y botón para «Quitar evidencia».
+  - Limpieza de recursos: detiene todos los tracks de video y revoca URLs de objeto creadas con `URL.revokeObjectURL()` al capturar, cancelar o desmontar el componente.
+  - Anuncia estados mediante accesibilidad (`role="status"`).
+- `capabilities-storage.ts` / `evidence-storage.ts` (`src/lib/device/`):
+  - Base de datos auxiliar `pwa-eq11-capabilities` (versión 1) con almacén `inspection_capabilities` y clave `inspectionId`.
+  - Completamente aislada de la base `pwa-eq11-inspections` de Semana 05: no altera stores de inspecciones, outbox ni sincronización.
+  - Implementa el contrato público acordado: `saveInspectionCapabilities()`, `getInspectionCapabilities()`, `deleteInspectionCapabilities()`.
+  - Soporta actualización y eliminación granular: `saveEvidence()` (no pisa ubicación), `saveLocation()` (no pisa evidencia), `removeEvidence()` y `removeLocation()`.
+- Pruebas propias:
+  - `tests/camera.spec.ts`: 15 pruebas cubriendo soporte, denegación, cancelación, ausencia de audio, validación de pistas, captura de frame, límite de tamaño y manejo de excepciones.
+  - `tests/evidence-storage.spec.ts`: 12 pruebas cubriendo ciclo CRUD, actualizaciones parciales, persistencia y aislamiento total respecto a Semana 05.
+
+Limitación: Las imágenes y registros auxiliares residen exclusivamente en el almacenamiento local del dispositivo. No viajan en la outbox ni se sincronizan con el backend remoto. Si se limpian los datos del navegador, los datos auxiliares pueden perderse.
+
 
 ### Geolocalización — implementada (Tonanzin)
 

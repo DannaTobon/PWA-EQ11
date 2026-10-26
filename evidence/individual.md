@@ -1057,3 +1057,53 @@ Los mensajes de `stderr` de `rendering.spec.tsx` y `ui-states.spec.tsx` (`NEXT_N
 - **IA:** Usé OpenCode (agente de codificación) para el diagnóstico, la redacción inicial de
   las pruebas y las correcciones; revisé cada diff, ejecuté los comandos y validé el flujo
   en el navegador. La decisión y la responsabilidad del código son mías.
+## Integrante: Fernando
+
+### 1. Bloque y archivos implementados
+
+Mi bloque corresponde al **módulo de cámara, control de evidencia fotográfica y almacenamiento auxiliar de capacidades (evidencia y ubicación)** en IndexedDB.
+
+- `src/lib/device/camera.ts`: módulo de cámara con detección de soporte, gestión de stream (`startCamera()` / `requestCameraStream()`), captura de frame en JPEG Blob (`captureFrame()` / `captureEvidence()`), liberación de tracks (`releaseStream()` / `releaseCameraStream()`) y mapeo determinista de errores.
+- `src/lib/device/capabilities-storage.ts` y `src/lib/device/evidence-storage.ts`: almacenamiento auxiliar en IndexedDB (`pwa-eq11-capabilities`, almacén `inspection_capabilities`), con operaciones `saveInspectionCapabilities()`, `getInspectionCapabilities()`, `deleteInspectionCapabilities()`, y helpers para actualización y eliminación parcial (`saveEvidence`, `saveLocation`, `removeEvidence`, `removeLocation`).
+- `src/components/device/CameraEvidenceControl.tsx`: componente React accesible con vista previa en vivo, captura, vista previa de imagen capturada, revocación de `objectURL` para prevenir fugas de memoria, acción de eliminar evidencia y anuncio de estado con `role="status"`.
+- `tests/camera.spec.ts`: pruebas unitarias de cámara (15 pruebas).
+- `tests/evidence-storage.spec.ts`: pruebas del almacenamiento auxiliar y de aislamiento respecto a la base de datos de Semana 05 (12 pruebas).
+- `docs/capabilities.md`: documentación de contratos, fallbacks, decisiones técnicas y límites del bloque.
+
+### 2. Commit técnico
+
+- `2e711b4ef5256ddc7b0a2927eeca7b6cb6b7862a` — `feat(w06): implementar modulo de camara, control de evidencia y persistencia auxiliar` (rama `feature/w06-camera-fernando`).
+
+### 3. Decisión técnica
+
+- **Separación estricta de base de datos:** se implementó una base IndexedDB independiente (`pwa-eq11-capabilities`) para los datos opcionales, de modo que no se modifican las tablas ni los esquemas de `pwa-eq11-inspections`, la outbox ni la sincronización de Semana 05.
+- **Video sin audio:** la cámara solicita únicamente `{ video: true, audio: false }` para cumplir con el principio de mínimos privilegios y no requerir permisos innecesarios de micrófono.
+- **Acceso bajo acción explícita:** ninguna API de cámara ni de almacenamiento se invoca automáticamente al montar o en SSR.
+- **Actualización granular:** el almacenamiento auxiliar permite guardar o quitar la evidencia fotográfica sin perder las coordenadas de geolocalización previamente guardadas para la misma inspección, y viceversa.
+- **Liberación idempotente de recursos:** `releaseStream` detiene todos los tracks de forma segura, y `CameraEvidenceControl` revoca URLs de objetos creadas (`URL.revokeObjectURL`) tanto al actualizar la vista previa como al desmontar el componente.
+
+### 4. Pruebas y validación automatizada
+
+Ejecutadas en entorno Windows con Node v22.22.0:
+
+- `npx vitest run tests/camera.spec.ts tests/evidence-storage.spec.ts` → exit 0; 2 archivos y 27/27 pruebas aprobadas.
+- `npx vitest run tests/capabilities.spec.ts` → exit 0; 1 archivo, 6 aprobadas y 3 todo.
+- `npm run verify` → exit 0; 19 archivos de pruebas y 175 pruebas aprobadas (más 3 todo), build de Next.js compilado exitosamente y `Verificación técnica: pass`.
+- `git diff --check` → exit 0.
+
+### 5. Limitaciones
+
+- La evidencia fotográfica y los datos auxiliares residen exclusivamente en el dispositivo (IndexedDB local); no se sincronizan con el backend ni viajan a través de la outbox de Semana 05.
+- La captura depende de que el navegador y el dispositivo soporten `mediaDevices.getUserMedia` y canvas 2D.
+- Si el usuario borra los datos del navegador, las fotos capturadas localmente se pierden.
+
+### 6. Uso de IA
+
+- **Herramienta:** Antigravity (Gemini 3.1 Pro).
+- **Propósito:** implementar el módulo de cámara con tipado seguro y detección SSR, crear el adaptador de base de datos auxiliar independiente, desarrollar el componente de interfaz accesible con ciclo de vida limpio de streams/URLs, y redactar la suite exhaustiva de pruebas unitarias con mocks de `MediaStream` y `fake-indexeddb`.
+- **Validación humana realizada:**
+  - Inspección del diff de código para asegurar ausencia de audio en restricciones y preservación del aislamiento de esquemas de Semana 05.
+  - Ejecución de `npx vitest run tests/camera.spec.ts tests/evidence-storage.spec.ts` (27/27 pruebas verdes).
+  - Ejecución de `npm run verify` comprobando suite completa (175 pruebas verdes, 19 archivos) y build de producción de Next.js exitoso.
+- **Validación humana pendiente:** verificación interactiva en el navegador con dispositivo de cámara real o emulado antes de fusionar el Pull Request.
+
