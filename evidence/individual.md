@@ -1178,7 +1178,7 @@ Ejecutadas en entorno Windows con Node v22.22.0:
   conflicto y recuperación de operaciones `inFlight`), `docs/test-strategy.md`,
   `.github/workflows/academic-evaluation.yml`, actualización de `scripts/verify.mjs` y de
   `README.md` (sección 16.7), y el defecto controlado de idempotencia. Rama
-  `test/w08-integration-tonanzin`; PR: `<enlace al PR #3>`; commit de código: `<SHA-TONANZIN>`.
+  `test/w08-integration-tonanzin`; PR: `<enlace al PR #3>`; commit de código: `<92a04dfe3f7f0551ef99a8f1eff29f0643497c41>`.
 - **Decisión técnica y motivo:**
   Probé la idempotencia contra el receptor real en memoria (`applyMutation`) y la cola real, no
   solo con mocks, porque el defecto vive en la guarda del servidor: un mock que siempre responde
