@@ -63,7 +63,7 @@ export function openStorageDatabase(): Promise<IDBDatabase> {
   });
 }
 
-async function useDatabase<T>(connection: DatabaseConnection, action: (database: IDBDatabase) => Promise<T>): Promise<T> {
+async function withDatabase<T>(connection: DatabaseConnection, action: (database: IDBDatabase) => Promise<T>): Promise<T> {
   const database = connection ?? (await openStorageDatabase());
   try {
     return await action(database);
@@ -88,7 +88,7 @@ export async function deleteStorageDatabase(): Promise<void> {
 
 export async function saveInspection(inspection: StoredInspection, connection?: IDBDatabase): Promise<void> {
   assertStoredInspection(inspection);
-  await useDatabase(connection, async (database) => {
+  await withDatabase(connection, async (database) => {
     const transaction = database.transaction(STORAGE_STORES.inspections, "readwrite");
     const completed = transactionCompleted(transaction);
     transaction.objectStore(STORAGE_STORES.inspections).put(inspection);
@@ -100,7 +100,7 @@ export const updateInspection = saveInspection;
 
 export async function getInspection(entityId: string, connection?: IDBDatabase): Promise<StoredInspection | undefined> {
   if (!entityId.trim()) throw new TypeError("El identificador de inspección es obligatorio.");
-  return useDatabase(connection, async (database) => {
+  return withDatabase(connection, async (database) => {
     const transaction = database.transaction(STORAGE_STORES.inspections, "readonly");
     return requestResult<StoredInspection | undefined>(
       transaction.objectStore(STORAGE_STORES.inspections).get(entityId)
@@ -109,7 +109,7 @@ export async function getInspection(entityId: string, connection?: IDBDatabase):
 }
 
 export async function getAllInspections(connection?: IDBDatabase): Promise<StoredInspection[]> {
-  return useDatabase(connection, async (database) => {
+  return withDatabase(connection, async (database) => {
     const transaction = database.transaction(STORAGE_STORES.inspections, "readonly");
     return requestResult<StoredInspection[]>(transaction.objectStore(STORAGE_STORES.inspections).getAll());
   });
@@ -117,7 +117,7 @@ export async function getAllInspections(connection?: IDBDatabase): Promise<Store
 
 export async function saveOutboxOperation(operation: OutboxOperation, connection?: IDBDatabase): Promise<void> {
   assertOutboxOperation(operation);
-  await useDatabase(connection, async (database) => {
+  await withDatabase(connection, async (database) => {
     const transaction = database.transaction(STORAGE_STORES.outbox, "readwrite");
     const completed = transactionCompleted(transaction);
     transaction.objectStore(STORAGE_STORES.outbox).put(operation);
@@ -130,14 +130,14 @@ export async function getOutboxOperation(
   connection?: IDBDatabase
 ): Promise<OutboxOperation | undefined> {
   if (!operationId.trim()) throw new TypeError("El identificador de operación es obligatorio.");
-  return useDatabase(connection, async (database) => {
+  return withDatabase(connection, async (database) => {
     const transaction = database.transaction(STORAGE_STORES.outbox, "readonly");
     return requestResult<OutboxOperation | undefined>(transaction.objectStore(STORAGE_STORES.outbox).get(operationId));
   });
 }
 
 export async function getAllOutboxOperations(connection?: IDBDatabase): Promise<OutboxOperation[]> {
-  return useDatabase(connection, async (database) => {
+  return withDatabase(connection, async (database) => {
     const transaction = database.transaction(STORAGE_STORES.outbox, "readonly");
     return requestResult<OutboxOperation[]>(transaction.objectStore(STORAGE_STORES.outbox).getAll());
   });
@@ -150,7 +150,7 @@ export async function updateOutboxOperation(
 ): Promise<OutboxOperation> {
   if (!operationId.trim()) throw new TypeError("El identificador de operación es obligatorio.");
 
-  return useDatabase(connection, async (database) => {
+  return withDatabase(connection, async (database) => {
     const transaction = database.transaction(STORAGE_STORES.outbox, "readwrite");
     const completed = transactionCompleted(transaction);
     const store = transaction.objectStore(STORAGE_STORES.outbox);
@@ -182,7 +182,7 @@ export async function saveInspectionWithOperation(
     throw new TypeError("La inspección y la operación pendiente no pertenecen a la misma mutación.");
   }
 
-  await useDatabase(connection, async (database) => {
+  await withDatabase(connection, async (database) => {
     const transaction = database.transaction(
       [STORAGE_STORES.inspections, STORAGE_STORES.outbox],
       "readwrite"
@@ -209,7 +209,7 @@ export async function saveSyncMeta(record: SyncMetaRecord, connection?: IDBDatab
     throw new TypeError("Los metadatos de sincronización no son válidos.");
   }
 
-  await useDatabase(connection, async (database) => {
+  await withDatabase(connection, async (database) => {
     const transaction = database.transaction(STORAGE_STORES.syncMeta, "readwrite");
     const completed = transactionCompleted(transaction);
     transaction.objectStore(STORAGE_STORES.syncMeta).put(record);
@@ -219,7 +219,7 @@ export async function saveSyncMeta(record: SyncMetaRecord, connection?: IDBDatab
 
 export async function getSyncMeta(key: string, connection?: IDBDatabase): Promise<SyncMetaRecord | undefined> {
   if (!key.trim()) throw new TypeError("La clave de metadatos es obligatoria.");
-  return useDatabase(connection, async (database) => {
+  return withDatabase(connection, async (database) => {
     const transaction = database.transaction(STORAGE_STORES.syncMeta, "readonly");
     return requestResult<SyncMetaRecord | undefined>(transaction.objectStore(STORAGE_STORES.syncMeta).get(key));
   });

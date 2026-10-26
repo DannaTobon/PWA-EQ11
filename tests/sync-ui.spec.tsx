@@ -83,6 +83,28 @@ describe("integración de la cola con el ciclo de vida", () => {
     await waitFor(() => expect(mocks.processQueue).toHaveBeenCalledTimes(1));
   });
 
+  it("sin conexión al iniciar carga los datos locales y espera el evento online", async () => {
+    const originalOnLine = Object.getOwnPropertyDescriptor(navigator, "onLine");
+    Object.defineProperty(navigator, "onLine", { configurable: true, value: false });
+
+    try {
+      renderHook(() => useInspectionSync());
+
+      await waitFor(() => expect(mocks.getAllInspections).toHaveBeenCalledTimes(1));
+      expect(mocks.processQueue).not.toHaveBeenCalled();
+
+      act(() => window.dispatchEvent(new Event("online")));
+
+      await waitFor(() => expect(mocks.processQueue).toHaveBeenCalledTimes(1));
+    } finally {
+      if (originalOnLine) {
+        Object.defineProperty(navigator, "onLine", originalOnLine);
+      } else {
+        delete (navigator as { onLine?: unknown }).onLine;
+      }
+    }
+  });
+
   it("vuelve a procesar al recibir el evento online", async () => {
     renderHook(() => useInspectionSync());
     await waitFor(() => expect(mocks.processQueue).toHaveBeenCalledTimes(1));

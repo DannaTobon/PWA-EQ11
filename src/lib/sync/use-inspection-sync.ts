@@ -99,13 +99,22 @@ export function useInspectionSync() {
     mountedRef.current = true;
     const handleOnline = () => void synchronize();
     window.addEventListener("online", handleOnline);
-    void synchronize();
+
+    // Sin conexión no se intenta agotar la cola: se muestran primero los datos
+    // locales y la sincronización se reanuda con el evento `online`. Antes, una
+    // recarga offline tardaba los siete segundos de reintentos en mostrar la
+    // inspección guardada, aunque ya estuviera en IndexedDB.
+    if (navigator.onLine) {
+      void synchronize();
+    } else {
+      void refresh();
+    }
 
     return () => {
       mountedRef.current = false;
       window.removeEventListener("online", handleOnline);
     };
-  }, [synchronize]);
+  }, [refresh, synchronize]);
 
   return {
     inspections,
