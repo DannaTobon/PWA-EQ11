@@ -73,9 +73,9 @@ Workflow: `.github/workflows/academic-evaluation.yml`. Se ejecuta en `push`, `pu
 - **Cambio:** en la rama temporal `tmp/w08-defecto-idempotencia` se comentó esa línea con la marca `// DEFECTO CONTROLADO SEMANA 08`. La rama nunca se fusiona a `main`.
 - **Prueba que falla:** `tests/integration/duplicate-sync.spec.ts`. Sin la guarda, el reintento repite una mutación ya aplicada, el receptor la trata como un conflicto de revisión (409) y la operación no llega a `done`; además, la segunda respuesta con la misma clave deja de ser idéntica a la primera.
 - **Comprobación local previa (en un contenedor, sin CI):** con la guarda comentada, `npm run test:integration` dio 2 pruebas fallidas de 11 (reintento tras respuesta perdida y misma clave de idempotencia); al restaurar el archivo, las 11 pasaron.
-- **Run rojo en Actions:** *(pendiente: pegar la URL del run fallido de la rama temporal)*.
+- **Run rojo en Actions:** https://github.com/DannaTobon/PWA-EQ11/actions/runs/40270394957.
 - **Reversión:** `git revert --no-edit HEAD` y `git push`.
-- **Run verde tras revertir:** *(pendiente: pegar la URL del run verde de la misma rama)*.
+- **Run verde tras revertir:** https://github.com/DannaTobon/PWA-EQ11/actions/runs/40270550948.
 - **Conclusión:** *(completar tras ver ambos runs)* La prueba falla por la causa correcta y vuelve a pasar al revertir; no se simuló el fallo con `|| true` ni `continue-on-error`.
 
 ## 8. Cobertura

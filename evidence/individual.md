@@ -1178,7 +1178,7 @@ Ejecutadas en entorno Windows con Node v22.22.0:
   conflicto y recuperación de operaciones `inFlight`), `docs/test-strategy.md`,
   `.github/workflows/academic-evaluation.yml`, actualización de `scripts/verify.mjs` y de
   `README.md` (sección 16.7), y el defecto controlado de idempotencia. Rama
-  `test/w08-integration-tonanzin`; PR: `<enlace al PR #3>`; commit de código: `<92a04dfe3f7f0551ef99a8f1eff29f0643497c41>`.
+  `test/w08-integration-tonanzin`; PR: `<https://github.com/DannaTobon/PWA-EQ11/pull/18>`; commit de código: `<92a04dfe3f7f0551ef99a8f1eff29f0643497c41>`.
 - **Decisión técnica y motivo:**
   Probé la idempotencia contra el receptor real en memoria (`applyMutation`) y la cola real, no
   solo con mocks, porque el defecto vive en la guarda del servidor: un mock que siempre responde
@@ -1204,9 +1204,9 @@ Ejecutadas en entorno Windows con Node v22.22.0:
   Suite completa con cobertura: 22 archivos, 237 aprobadas y 3 `todo`. Lint sin errores (una
   advertencia previa por `<img>` en `CameraEvidenceControl.tsx`), tipos y build correctos.
   Antes del run rojo comprobé en local que, sin la guarda de idempotencia, fallan 2 de las 11
-  pruebas de integración. E2E local: `<resultado de npm run test:e2e>` E2E local: 2 pruebas aprobadas en Chromium (flujo offline y permiso denegado), 7.2 s..
-  Run rojo del defecto controlado: `<URL del run rojo>`. Run verde tras revertir: `<URL del run verde>`.
-  Run final en `main`: `<URL del run verde del SHA final>`.
+  pruebas de integración. E2E local: 2 pruebas aprobadas en Chromium (flujo offline y permiso denegado), 7.2 s..
+  Run rojo del defecto controlado: `<https://github.com/DannaTobon/PWA-EQ11/actions/runs/40270394957>`. Run verde tras revertir: `<https://github.com/DannaTobon/PWA-EQ11/actions/runs/40270550948>`.
+  Run final en `main`: `<https://github.com/DannaTobon/PWA-EQ11/actions/runs/40267899051/job/121394193127>`.
 - **Qué demuestra y qué no demuestra:**
   Demuestra que un reintento con el mismo `operationId` no crea otro registro ni avanza la
   revisión, que una captura no queda a medias y que un conflicto bloquea solo su inspección.
