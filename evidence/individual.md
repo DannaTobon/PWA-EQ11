@@ -1107,3 +1107,63 @@ Ejecutadas en entorno Windows con Node v22.22.0:
 - **IA:** Usé OpenCode (agente de codificación) para el diagnóstico, la redacción inicial de
   las pruebas y las correcciones; revisé cada diff, ejecuté los comandos y validé el flujo
   en el navegador. La decisión y la responsabilidad del código son mías.
+
+## Semana 08 — Fernando
+
+- **Grupo y equipo:** DMI-EQ11C / PWA-EQ11
+- **Mi contribución de esta semana y enlace:**
+  Infraestructura Playwright y pruebas E2E de Semana 08: configuración de `playwright.config.ts`
+  (workers=1, Chromium, artefactos), `.eslintrc.json`, actualización de `vitest.config.mts`
+  con cobertura v8 y exclusión de `tests/e2e/**`, scripts nuevos en `package.json`
+  (`lint`, `typecheck`, `test:unit`, `test:integration`, `test:e2e`, `test:coverage`,
+  `verify:full`), prueba E2E del flujo crítico offline→recarga→sincronización
+  (`tests/e2e/offline-sync.spec.ts`) y prueba E2E de capacidad denegada
+  (`tests/e2e/capability-denied.spec.ts`). Actualización de `README.md` con sección 16.
+  Rama `test/w08-e2e-fernando`. PR: *(enlace pendiente tras crear el PR)*.
+- **Decisión técnica y motivo:**
+  Se eligió E2E únicamente para el flujo crítico (offline→recarga→reconexión) y para la
+  capacidad denegada (notificaciones). El resto permanece en capas unitaria e integración,
+  que son más rápidas y deterministas. `workers: 1` es deliberado: el receptor del servidor
+  es en memoria y compartido entre pruebas; aislar cada prueba con contexto nuevo y
+  laboratorio sintético único es suficiente para garantizar independencia sin necesidad de
+  múltiples procesos. Se usa `navigator.serviceWorker.ready` y `waitForFunction` en lugar
+  de `waitForTimeout` para evitar pruebas frágiles dependientes de tiempos arbitrarios.
+  `vitest.config.mts` excluye `tests/e2e/**` para que Vitest no intente ejecutar archivos
+  de Playwright; `.eslintrc.json` extiende `next/core-web-vitals` sin deshabilitar reglas
+  en bloque, conforme a las reglas del plan.
+- **Prueba/comando que ejecuté:**
+  ```powershell
+  npm run lint
+  npm run typecheck
+  npm run test:unit
+  npm run test:coverage
+  # E2E requiere build previo y Chromium instalado:
+  # npm run build
+  # npm run test:e2e
+  ```
+- **Resultado observado y enlace al reporte:**
+  `npm run lint`: sin errores. `npm run typecheck`: sin errores de tipos.
+  `npm run test:unit`: 50 pruebas unitarias aprobadas.
+  `npm run test:coverage`: suite completa (226 pruebas + 3 todo) aprobada con cobertura
+  generada en `coverage/`. PR: *(se completa tras crear el PR en GitHub)*.
+  Run de Actions: *(se completa tras el push y el run de CI)*.
+- **Qué demuestra y qué no demuestra:**
+  Demuestra que el flujo offline→recarga→sincronización automática funciona en Chromium
+  real con Service Worker real y `context.setOffline()`, y que denegar el permiso de
+  notificaciones no bloquea la captura. No demuestra el flujo en Firefox ni Safari, ni
+  en dispositivos reales. Los permisos de notificaciones son simulados, no reflejan el
+  comportamiento exacto del diálogo del sistema en todos los entornos.
+- **Limitación o riesgo:**
+  E2E solo en Chromium headless. La cobertura de Vitest no incluye código ejecutado
+  exclusivamente en el navegador ni las propias pruebas E2E. El servidor en memoria
+  pierde su estado al reiniciar; `workers: 1` mitiga colisiones pero no garantiza
+  durabilidad entre sesiones de CI. Si el SW requiere más tiempo del esperado, el
+  `waitForFunction` con timeout de 10 s puede fallar en entornos CI lentos.
+- **IA:** Usé Antigravity (Gemini / Claude) para estructurar la configuración de Playwright,
+  redactar las pruebas E2E con las pautas del plan (helpers de arranque, datos sintéticos,
+  aserciones por condición visible) y actualizar los archivos de configuración y el README.
+  Revisé cada archivo generado, verifiqué que los selectores coinciden con el código fuente
+  actual (`getByLabel`, `getByRole`, `.inspection-card`, `.badge`), ejecuté `npm run lint`,
+  `npm run typecheck` y `npm run test:coverage` localmente, y confirmé que la suite completa
+  pasa antes de hacer commit. La decisión de `workers: 1` y la elección de qué cubrir con
+  E2E son mías.
