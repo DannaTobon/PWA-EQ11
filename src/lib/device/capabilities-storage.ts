@@ -117,7 +117,7 @@ export const deleteEvidenceDatabase = deleteCapabilitiesDatabase;
 
 type ConnectionArg = IDBDatabase | undefined;
 
-async function useDb<T>(
+async function withDb<T>(
   connection: ConnectionArg,
   action: (db: IDBDatabase) => Promise<T>
 ): Promise<T> {
@@ -139,7 +139,7 @@ export async function saveInspectionCapabilities(
   if (!record.inspectionId?.trim()) {
     throw new TypeError("El identificador de inspección es obligatorio.");
   }
-  await useDb(connection, async (db) => {
+  await withDb(connection, async (db) => {
     const tx = db.transaction(CAPABILITIES_STORE_NAME, "readwrite");
     const done = transactionCompleted(tx);
     tx.objectStore(CAPABILITIES_STORE_NAME).put(record);
@@ -159,7 +159,7 @@ export async function getInspectionCapabilities(
   if (!inspectionId?.trim()) {
     throw new TypeError("El identificador de inspección es obligatorio.");
   }
-  return useDb(connection, async (db) => {
+  return withDb(connection, async (db) => {
     const tx = db.transaction(CAPABILITIES_STORE_NAME, "readonly");
     return requestResult<InspectionCapabilityRecord | undefined>(
       tx.objectStore(CAPABILITIES_STORE_NAME).get(inspectionId)
@@ -179,7 +179,7 @@ export async function deleteInspectionCapabilities(
   if (!inspectionId?.trim()) {
     throw new TypeError("El identificador de inspección es obligatorio.");
   }
-  await useDb(connection, async (db) => {
+  await withDb(connection, async (db) => {
     const tx = db.transaction(CAPABILITIES_STORE_NAME, "readwrite");
     const done = transactionCompleted(tx);
     tx.objectStore(CAPABILITIES_STORE_NAME).delete(inspectionId);
@@ -195,7 +195,7 @@ export const deleteCapabilityRecord = deleteInspectionCapabilities;
 export async function getAllCapabilityRecords(
   connection?: IDBDatabase
 ): Promise<InspectionCapabilityRecord[]> {
-  return useDb(connection, async (db) => {
+  return withDb(connection, async (db) => {
     const tx = db.transaction(CAPABILITIES_STORE_NAME, "readonly");
     return requestResult<InspectionCapabilityRecord[]>(
       tx.objectStore(CAPABILITIES_STORE_NAME).getAll()

@@ -6,10 +6,18 @@
     "dev": "next dev",
     "build": "next build",
     "start": "next start",
+    "lint": "next lint",
+    "typecheck": "tsc --noEmit",
     "test": "node tests/starter.spec.mjs && vitest run",
+    "test:starter": "node tests/starter.spec.mjs",
+    "test:unit": "vitest run tests/unit",
+    "test:integration": "vitest run tests/integration",
+    "test:e2e": "playwright test",
+    "test:coverage": "vitest run --coverage --reporter=default --reporter=json --outputFile=vitest-report.json",
     "test:manifest": "vitest run --reporter=default --reporter=json --outputFile=vitest-report.json",
     "test:all": "npm test && npm run test:manifest",
-    "verify": "node scripts/verify.mjs"
+    "verify": "node scripts/verify.mjs",
+    "verify:full": "npm run verify && npm run test:e2e"
   },
   "dependencies": {
     "next": "14.2.35",
@@ -17,6 +25,7 @@
     "react-dom": "18.3.1"
   },
   "devDependencies": {
+    "@playwright/test": "^1.64.1",
     "@testing-library/dom": "^10.4.1",
     "@testing-library/jest-dom": "^6.6.3",
     "@testing-library/react": "^16.3.3",
@@ -24,6 +33,9 @@
     "@types/react": "^18.3.3",
     "@types/react-dom": "^18.3.0",
     "@vitejs/plugin-react": "^4.3.4",
+    "@vitest/coverage-v8": "^3.2.4",
+    "eslint": "^8.57.1",
+    "eslint-config-next": "^14.2.35",
     "fake-indexeddb": "^6.2.5",
     "jsdom": "^25.0.1",
     "typescript": "^5.4.5",

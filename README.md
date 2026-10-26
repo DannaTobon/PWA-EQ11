@@ -220,9 +220,82 @@ src/lib/pwa/        registro del Service Worker (register-service-worker.ts)
 src/lib/storage/    esquema y adaptador IndexedDB
 src/lib/sync/       cliente, cola, política de conflictos e integración con la UI
 public/             manifest, iconos, sw.js y offline.html
-tests/              pruebas Vitest (manifest, UI, service worker, offline, rendering CSR/SSR) y starter
+tests/unit/         pruebas unitarias puras (validación y reglas de cola)
+tests/integration/  pruebas de integración con fake-indexeddb y store real (Tonanzin — Semana 08)
+tests/e2e/          pruebas E2E con Playwright (Fernando — Semana 08)
+tests/              suite de regresión de Semanas 1–6 (Vitest)
 scripts/            verify.mjs
-docs/               requisitos, decisión (ADR-001), cache-strategy.md, rendering-decision.md y checklist de integración
+docs/               requisitos, decisión (ADR-001), cache-strategy.md, rendering-decision.md, checklist, test-strategy.md
 evidence/           evidencia individual (individual.md)
-.github/workflows/  CI (Semana 1, Semana 2 y Semana 3)
+.github/workflows/  CI (Semana 1, Semana 2, Semana 3, Semana 5 y Semana 08)
 ```
+
+---
+
+## 16. Semana 08 — Pruebas, estrategia y CI
+
+### 16.1 Requisitos adicionales
+
+- **Playwright**: `npm ci` instala `@playwright/test`; luego `npx playwright install chromium`.
+- **Cobertura**: incluida en `@vitest/coverage-v8` (ya instalada con `npm ci`).
+
+### 16.2 Comandos nuevos
+
+| Comando | Qué hace |
+|---|---|
+| `npm run lint` | ESLint con `next/core-web-vitals` sobre `src/` |
+| `npm run typecheck` | `tsc --noEmit` sobre `src/` |
+| `npm run test:unit` | Vitest sobre `tests/unit/` |
+| `npm run test:integration` | Vitest sobre `tests/integration/` |
+| `npm run test:e2e` | Playwright E2E (requiere build previo o `npm start` corriendo) |
+| `npm run test:coverage` | Vitest completo con cobertura; genera `coverage/` y `vitest-report.json` |
+| `npm run verify` | lint + tipos + starter + cobertura + build (compuerta local rápida) |
+| `npm run verify:full` | `verify` + E2E (requiere Chromium instalado) |
+
+### 16.3 Servidor para E2E
+
+Playwright arranca `npm start` automáticamente (vía `webServer` en `playwright.config.ts`).
+En local, si el servidor ya está corriendo, se reutiliza (`reuseExistingServer: true`).
+En CI se requiere build previo:
+
+```bash
+npm run build
+npm run test:e2e
+```
+
+### 16.4 Workflow CI (Semana 08)
+
+Archivo: `.github/workflows/academic-evaluation.yml` (agregado por Tonanzin en PR #3).
+
+Etapas: checkout → Node 20.19.6 → `npm ci` → lint → typecheck → unitarias → integración → cobertura → build → Playwright Chromium → E2E → subida de artefactos.
+
+Artefactos publicados en cada run:
+- `coverage/` — cobertura de Vitest (HTML, JSON, LCOV)
+- `vitest-report.json` — resultados de Vitest
+- `test-results/` — resultados E2E y artefactos de fallos (capturas, trazas, vídeos)
+- `playwright-report/` — reporte HTML de Playwright
+- `reports/verification.json` — compuerta local
+
+### 16.5 Correspondencia con pruebas existentes
+
+Las nuevas pruebas de Semana 08 **agregan** aserciones directas y la capa E2E; no duplican los flujos completos de semanas anteriores.
+
+| Prueba existente | Cobertura actual | Qué agrega Semana 08 |
+|---|---|---|
+| `tests/storage.spec.ts` | Guardado, transacción y lectura IndexedDB | Integración de reapertura y atomicidad (Tonanzin) |
+| `tests/queue.spec.ts` | Cola, reintentos, idempotencia y conflictos | Contratos directos de selección/confirmación (Danna) y duplicado contra store real (Tonanzin) |
+| `tests/sync.spec.ts` | Sincronización y política de conflictos | Defecto controlado y evidencia de regresión (Tonanzin) |
+| `tests/capabilities.spec.ts` | Notificaciones/geolocalización y fallback | E2E de permiso denegado en navegador real (Fernando) |
+| `tests/service-worker.spec.ts` | Contrato y estrategias del SW | Registro real tras hidratación y recarga offline (Danna + Fernando) |
+| `tests/offline.spec.ts` | Fallback y caché | Flujo completo offline → recarga → reconexión (Fernando) |
+| `tests/register-service-worker.spec.ts` | Registro simulado tras `load` | Rama de registro inmediato cuando `load` ya ocurrió (Danna) |
+| `tests/sync-ui.spec.tsx` | Montaje y sincronización de la UI | Montaje offline con datos locales y espera de `online` (Danna) |
+
+### 16.6 Límites (Semana 08)
+
+- Los E2E corren solo en Chromium headless, no en dispositivo real.
+- Los permisos de notificaciones se simulan con `context.clearPermissions()`; no representan el flujo real del usuario en todos los navegadores.
+- La cobertura de Vitest no mide código ejecutado solo en el navegador ni las pruebas E2E.
+- El receptor del servidor (`src/lib/sync/api-store.ts`) es en memoria y de una sola instancia; `workers: 1` garantiza aislamiento suficiente para las pruebas.
+- `/inspecciones` solo se cachea después de visitarla; un arranque en frío totalmente offline cae en `offline.html`. El flujo E2E lo visita antes de desconectar.
+

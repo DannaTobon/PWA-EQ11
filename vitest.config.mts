@@ -1,4 +1,4 @@
-import { defineConfig } from "vitest/config";
+import { configDefaults, defineConfig } from "vitest/config";
 import { fileURLToPath } from "node:url";
 import react from "@vitejs/plugin-react";
 
@@ -13,6 +13,14 @@ export default defineConfig({
     environment: "jsdom",
     setupFiles: ["./tests/setup.ts"],
     include: ["tests/**/*.spec.ts", "tests/**/*.spec.tsx"],
-    reporters: "default"
+    exclude: [...configDefaults.exclude, "tests/e2e/**"],
+    reporters: "default",
+    coverage: {
+      provider: "v8",
+      reporter: ["text", "json-summary", "html", "lcov"],
+      reportsDirectory: "coverage",
+      include: ["src/**/*.{ts,tsx}"],
+      exclude: ["src/**/*.d.ts"]
+    }
   }
 });

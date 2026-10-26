@@ -9,3 +9,7 @@ reports/verification.json
 
 
 vitest-report.json
+playwright-report/
+test-results/
+blob-report/
+*.tsbuildinfo
