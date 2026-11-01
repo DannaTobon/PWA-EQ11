@@ -304,3 +304,23 @@ Las nuevas pruebas de Semana 08 **agregan** aserciones directas y la capa E2E; n
 - `tests/integration/offline-persistence.spec.ts`: persistencia tras cerrar y reabrir IndexedDB, atomicidad de `saveInspectionWithOperation` y aislamiento entre inspecciones.
 - `tests/integration/duplicate-sync.spec.ts`: cola real contra el receptor real en memoria; reintento tras respuesta perdida, misma clave de idempotencia, conflicto de revisión y recuperación de operaciones `inFlight`.
 - Estas pruebas deben fallar si se quita la guarda de idempotencia de `src/lib/sync/api-store.ts`. El procedimiento del defecto controlado (run rojo, reversión y run verde) y sus enlaces están en `docs/test-strategy.md`, sección 7.
+
+---
+
+## 17. Semana 09 — Validación de inspecciones (bloque de Danna)
+
+Este bloque agrega un contrato centralizado en `src/lib/security/validation.ts` para los ocho campos reales de una inspección: `id`, `location`, `date`, `inspector`, `status`, `statusLabel`, `findings` y `summary`. La validación recibe `unknown`, exige objetos planos, rechaza propiedades inesperadas y devuelve un resultado discriminado con datos normalizados o mensajes seguros. Solo elimina espacios al inicio y al final; conserva los espacios internos y trata todo contenido como texto, sin intentar interpretar ni reemplazar HTML.
+
+Límites elegidos: `id` 128 caracteres, laboratorio 120, responsable 100, etiqueta de estado 64, resumen 1000 y hallazgos enteros entre 0 y 1000. La fecha usa exactamente `YYYY-MM-DD` y se comprueba contra el calendario sin conversiones de zona horaria. El sobre HTTP limita `operationId` a 200 caracteres y el cuerpo a 16 KiB antes de parsearlo; este último es un límite de aplicación y debe complementarse con límites del proxy o plataforma de despliegue.
+
+El mismo contrato protege IndexedDB, el receptor de sincronización, el formulario y el `POST /api/inspecciones`. La validación cliente mejora la respuesta de la interfaz, pero el servidor es la autoridad final: exige un `Content-Type` JSON compatible, rechaza JSON malformado y payloads inválidos sin reflejar cuerpos, excepciones ni trazas. Se conservaron la idempotencia, las revisiones y la resolución de conflictos existentes.
+
+```bash
+npx vitest run tests/security.spec.ts
+npx vitest run tests/unit/validation.spec.ts tests/storage.spec.ts tests/queue.spec.ts tests/sync.spec.ts tests/integration
+npm run verify
+```
+
+**Decisión técnica:** centralizar normalización y reglas del dominio sin agregar dependencias, y hacer que los validadores históricos deleguen al nuevo contrato para evitar reglas divergentes. Todos los casos y fixtures agregados usan datos exclusivamente sintéticos.
+
+**Límites:** esta validación no sustituye autenticación, autorización, rate limiting ni límites de transporte configurados por la infraestructura. Este es únicamente el bloque de validación de Danna; no declara completa la Semana 09 ni incluye el modelo de amenazas, el inventario de privacidad, CSP u otros bloques del equipo.
