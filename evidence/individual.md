@@ -1220,3 +1220,81 @@ Ejecutadas en entorno Windows con Node v22.22.0:
   integración, `docs/test-strategy.md`, el workflow y los cambios de `verify.mjs`. Revisé cada
   archivo, ejecuté los comandos y comprobé en local que las pruebas fallan sin la guarda de
   idempotencia. La decisión técnica y la responsabilidad del contenido son mías.
+
+---
+
+## Semana 09 — Danna Paola Tobon Mosqueda
+
+### 1. Identificación
+
+- **Nombre:** Danna Paola Tobon Mosqueda
+- **Grupo:** 10°A
+- **Semana:** 09
+- **Rama:** `feature/w09-validation-danna`
+
+### 2. Commits
+
+- **Incremento completo previo a evidencia:** `e6943ab35a145c3f2ab3163b6c6c8a7c419d0b02`
+- **Implementación inicial:** `8940ed0038d50b5e2f907c37d9d2ed8b14e8a122`
+- **Pruebas iniciales:** `b0704f092f0fa121d62e58d23679bf84301121be`
+- **Documentación:** `a8120e766787b48b24b25aaa0db93f60bb337679`
+- **Corrección de propiedades propias:** `724b4dc333f4881e80aad7adc383310c1eeab8b2`
+- **Pruebas finales de seguridad:** `e6943ab35a145c3f2ab3163b6c6c8a7c419d0b02`
+
+### 3. Aportación técnica
+
+Creé la validación centralizada de inspecciones y la integré en servidor, cliente,
+almacenamiento y receptor interno. El contrato usa una lista permitida de propiedades y exige
+propiedades propias para impedir que valores heredados satisfagan campos obligatorios. También
+valida fechas reales sin depender de conversiones de zona horaria y limita el cuerpo HTTP a 16
+KiB medidos como bytes UTF-8. La integración conserva la idempotencia, las revisiones y los
+conflictos existentes, y evita escrituras parciales en IndexedDB y outbox ante entradas
+inválidas. `tests/security.spec.ts` contiene 42 pruebas de comportamiento de seguridad.
+
+### 4. Decisión técnica
+
+Se centralizaron las reglas de validación en un contrato que recibe `unknown`, utiliza una lista
+permitida de propiedades y exige propiedades propias. El servidor se mantiene como autoridad
+final, mientras que la validación del cliente se utiliza para mejorar la experiencia y evitar
+escrituras locales innecesarias.
+
+### 5. Pruebas ejecutadas
+
+- `npx vitest run tests/security.spec.ts`: 42/42 pruebas aprobadas.
+- Suites relacionadas: 107 pruebas aprobadas y 3 `todo` heredados.
+- `npm run lint`: exit 0, con una advertencia heredada por `<img>` en
+  `CameraEvidenceControl.tsx`.
+- `npm run typecheck`: exit 0.
+- `npm run build`: exit 0 y 9 páginas generadas.
+- `npm run verify`: PASS, 279 pruebas aprobadas y 3 `todo` heredados.
+- `git diff --check`: exit 0.
+- `make verify`: no disponible en el entorno; `npm run verify` es el equivalente exacto
+  documentado.
+
+### 6. Limitación o riesgo
+
+El límite de 16 KiB se aplica después de que la plataforma entrega el cuerpo a la aplicación. Un
+proxy o plataforma de despliegue debe aplicar un límite de transporte previo. Además, la
+validación mejora la integridad de las entradas, pero no sustituye autenticación, autorización ni
+rate limiting.
+
+Como límite secundario, los límites de texto se calculan con unidades de código de JavaScript, no
+mediante grafemas Unicode visibles.
+
+### 7. Uso declarado de IA
+
+- **Herramientas:** ChatGPT y OpenCode.
+- **Propósito:** análisis del kit y del repositorio, planificación del contrato de validación,
+  apoyo en la implementación, generación de pruebas y auditoría de casos negativos.
+- **Validación humana:** revisión del reparto y los límites implementados; comprobación de los
+  reportes de pruebas, lint, typecheck, build y verify; revisión de los hallazgos de seguridad y
+  solicitud de correcciones antes de publicar la rama.
+- **Responsabilidad:** la integrante revisó los resultados, mantuvo el alcance asignado y no
+  aceptó la publicación hasta corregir propiedades heredadas, fronteras de bytes UTF-8 y ausencia
+  de escritura parcial.
+
+### 8. Datos utilizados
+
+- Todos los fixtures y datos de inspección son sintéticos.
+- No se agregaron secretos, tokens, credenciales ni datos reales.
+- No se incluyeron respuestas del quiz.
