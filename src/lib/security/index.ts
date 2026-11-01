@@ -2,6 +2,7 @@ export {
   INSPECTION_FIELDS,
   INSPECTION_LIMITS,
   MAX_INSPECTION_REQUEST_BYTES,
+  hasOwn,
   isPlainObject,
   validateInspection,
   validateInspectionMutation,

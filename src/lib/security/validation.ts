@@ -57,6 +57,10 @@ export type InspectionMutation = Readonly<{
 
 type PlainRecord = Record<string, unknown>;
 
+export function hasOwn(record: PlainRecord, field: PropertyKey): boolean {
+  return Object.prototype.hasOwnProperty.call(record, field);
+}
+
 export function isPlainObject(value: unknown): value is PlainRecord {
   if (typeof value !== "object" || value === null || Array.isArray(value)) return false;
   const prototype = Object.getPrototypeOf(value);
@@ -78,6 +82,11 @@ function validateText(
   maxLength: number,
   issues: ValidationIssue[]
 ): string | undefined {
+  if (!hasOwn(record, field)) {
+    issues.push({ code: "required", field, message: `El campo ${field} es obligatorio.` });
+    return undefined;
+  }
+
   const value = record[field];
   if (typeof value !== "string") {
     issues.push({ code: "invalid_type", field, message: `El campo ${field} debe ser texto.` });
@@ -128,14 +137,18 @@ export function validateInspection(value: unknown): ValidationResult<Inspection>
   const summary = validateText(value, "summary", INSPECTION_LIMITS.summary, issues);
 
   let status: InspectionStatus | undefined;
-  if (value.status !== "ok" && value.status !== "attention") {
+  if (!hasOwn(value, "status")) {
+    issues.push({ code: "required", field: "status", message: "El campo status es obligatorio." });
+  } else if (value.status !== "ok" && value.status !== "attention") {
     issues.push({ code: "invalid_value", field: "status", message: "El estado de la inspección no está permitido." });
   } else {
     status = value.status;
   }
 
   let findings: number | undefined;
-  if (typeof value.findings !== "number" || !Number.isFinite(value.findings)) {
+  if (!hasOwn(value, "findings")) {
+    issues.push({ code: "required", field: "findings", message: "El campo findings es obligatorio." });
+  } else if (typeof value.findings !== "number" || !Number.isFinite(value.findings)) {
     issues.push({ code: "invalid_type", field: "findings", message: "Los hallazgos deben ser un número finito." });
   } else if (!Number.isInteger(value.findings)) {
     issues.push({ code: "invalid_value", field: "findings", message: "Los hallazgos deben ser un número entero." });
@@ -185,8 +198,15 @@ export function validateInspectionMutation(value: unknown): ValidationResult<Ins
   rejectUnexpectedFields(value, MUTATION_FIELDS, issues);
   const operationId = validateText(value, "operationId", INSPECTION_LIMITS.operationId, issues);
   const entityId = validateText(value, "entityId", INSPECTION_LIMITS.id, issues);
-  const payloadResult = validateInspection(value.payload);
-  if (!payloadResult.success) {
+
+  let payloadResult: ValidationResult<Inspection>;
+  if (!hasOwn(value, "payload")) {
+    issues.push({ code: "required", field: "payload", message: "El campo payload es obligatorio." });
+    payloadResult = { success: false, issues: [] };
+  } else {
+    payloadResult = validateInspection(value.payload);
+  }
+  if (hasOwn(value, "payload") && !payloadResult.success) {
     issues.push(
       ...payloadResult.issues.map((issue) => ({
         ...issue,
@@ -196,14 +216,18 @@ export function validateInspectionMutation(value: unknown): ValidationResult<Ins
   }
 
   let type: "create" | "update" | undefined;
-  if (value.type !== "create" && value.type !== "update") {
+  if (!hasOwn(value, "type")) {
+    issues.push({ code: "required", field: "type", message: "El campo type es obligatorio." });
+  } else if (value.type !== "create" && value.type !== "update") {
     issues.push({ code: "invalid_value", field: "type", message: "El tipo de mutación no está permitido." });
   } else {
     type = value.type;
   }
 
   let baseRevision: number | null | undefined;
-  if (value.baseRevision === null) {
+  if (!hasOwn(value, "baseRevision")) {
+    issues.push({ code: "required", field: "baseRevision", message: "El campo baseRevision es obligatorio." });
+  } else if (value.baseRevision === null) {
     baseRevision = null;
   } else if (
     typeof value.baseRevision !== "number" ||
