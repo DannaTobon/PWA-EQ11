@@ -1,4 +1,5 @@
 import type { Inspection } from "@/lib/data/inspections";
+import { validateInspection } from "@/lib/security";
 
 export const STORAGE_DATABASE_NAME = "pwa-eq11-inspections";
 export const STORAGE_DATABASE_VERSION = 1;
@@ -68,26 +69,15 @@ function isIsoDateTime(value: unknown): value is string {
 }
 
 export function isInspection(value: unknown): value is Inspection {
-  if (!value || typeof value !== "object") return false;
-
-  const inspection = value as Partial<Inspection>;
-  return (
-    isNonEmptyString(inspection.id) &&
-    isNonEmptyString(inspection.location) &&
-    isNonEmptyString(inspection.date) &&
-    isNonEmptyString(inspection.inspector) &&
-    (inspection.status === "ok" || inspection.status === "attention") &&
-    isNonEmptyString(inspection.statusLabel) &&
-    Number.isInteger(inspection.findings) &&
-    (inspection.findings as number) >= 0 &&
-    isNonEmptyString(inspection.summary)
-  );
+  return validateInspection(value).success;
 }
 
 export function isStoredInspection(value: unknown): value is StoredInspection {
-  if (!isInspection(value)) return false;
+  if (!value || typeof value !== "object" || Array.isArray(value)) return false;
 
-  const sync = (value as Partial<StoredInspection>).sync;
+  const { sync, ...inspection } = value as StoredInspection;
+  if (!isInspection(inspection)) return false;
+
   return Boolean(
     sync &&
       OPERATION_STATUSES.has(sync.status) &&
