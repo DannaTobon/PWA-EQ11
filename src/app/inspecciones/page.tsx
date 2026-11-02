@@ -2,7 +2,7 @@
 
 import { type FormEvent, useEffect, useMemo, useRef, useState } from "react";
 import Link from "next/link";
-import type { Inspection, InspectionStatus } from "@/lib/data/inspections";
+import type { Inspection } from "@/lib/data/inspections";
 import { LoadingState } from "@/components/ui/loading-state";
 import { ErrorState } from "@/components/ui/error-state";
 import { InspectionConflictReview } from "@/components/inspection-conflict-review";
@@ -11,12 +11,13 @@ import type { OutboxOperation, StoredInspection } from "@/lib/storage/schema";
 import { useInspectionSync } from "@/lib/sync/use-inspection-sync";
 import { NotificationControl } from "@/components/device/NotificationControl";
 import { showLocalNotification } from "@/lib/notifications/client";
+import { INSPECTION_LIMITS, validateInspection } from "@/lib/security";
 
 type CaptureForm = {
   location: string;
   date: string;
   inspector: string;
-  status: InspectionStatus;
+  status: string;
   findings: string;
   summary: string;
 };
@@ -112,16 +113,23 @@ export default function InspeccionesPage() {
       const findings = Number(form.findings);
       const statusLabel = form.status === "ok" ? "Sin incidencias" : "Requiere atención";
 
-      const payload: Inspection = {
+      const validation = validateInspection({
         id: entityId,
-        location: form.location.trim(),
+        location: form.location,
         date: form.date,
-        inspector: form.inspector.trim(),
+        inspector: form.inspector,
         status: form.status,
         statusLabel,
         findings,
-        summary: form.summary.trim()
-      };
+        summary: form.summary
+      });
+
+      if (!validation.success) {
+        setStorageError(`Revisa la inspección: ${validation.issues[0]?.message ?? "Los datos no son válidos."}`);
+        return;
+      }
+
+      const payload = validation.data;
 
       const localInspection: StoredInspection = {
         ...payload,
@@ -181,6 +189,7 @@ export default function InspeccionesPage() {
               Laboratorio
               <input
                 required
+                maxLength={INSPECTION_LIMITS.location}
                 value={form.location}
                 onChange={(event) => setForm({ ...form, location: event.target.value })}
               />
@@ -198,6 +207,7 @@ export default function InspeccionesPage() {
               Responsable sintético
               <input
                 required
+                maxLength={INSPECTION_LIMITS.inspector}
                 value={form.inspector}
                 onChange={(event) => setForm({ ...form, inspector: event.target.value })}
               />
@@ -206,7 +216,7 @@ export default function InspeccionesPage() {
               Estado
               <select
                 value={form.status}
-                onChange={(event) => setForm({ ...form, status: event.target.value as InspectionStatus })}
+                onChange={(event) => setForm({ ...form, status: event.target.value })}
               >
                 <option value="ok">Sin incidencias</option>
                 <option value="attention">Requiere atención</option>
@@ -217,6 +227,7 @@ export default function InspeccionesPage() {
               <input
                 required
                 min="0"
+                max={INSPECTION_LIMITS.findingsMax}
                 step="1"
                 type="number"
                 value={form.findings}
@@ -228,6 +239,7 @@ export default function InspeccionesPage() {
             Resumen sintético
             <textarea
               required
+              maxLength={INSPECTION_LIMITS.summary}
               rows={3}
               value={form.summary}
               onChange={(event) => setForm({ ...form, summary: event.target.value })}

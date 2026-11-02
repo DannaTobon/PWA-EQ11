@@ -1,4 +1,5 @@
 import type { Inspection } from "@/lib/data/inspections";
+import { hasOwn, isPlainObject, validateInspection } from "@/lib/security";
 
 export const STORAGE_DATABASE_NAME = "pwa-eq11-inspections";
 export const STORAGE_DATABASE_VERSION = 1;
@@ -54,6 +55,7 @@ const OPERATION_STATUSES: ReadonlySet<OperationStatus> = new Set<OperationStatus
 ]);
 
 const OPERATION_TYPES: ReadonlySet<OutboxOperationType> = new Set<OutboxOperationType>(["create", "update"]);
+const SYNC_FIELDS = new Set(["status", "baseRevision", "pendingOperationId", "lastSyncedAt"]);
 
 function isNonEmptyString(value: unknown): value is string {
   return typeof value === "string" && value.trim().length > 0;
@@ -63,37 +65,32 @@ function isRevision(value: unknown): value is number | null {
   return value === null || (Number.isInteger(value) && (value as number) >= 0);
 }
 
+function isOperationStatus(value: unknown): value is OperationStatus {
+  return value === "pending" || value === "inFlight" || value === "done" || value === "failed" || value === "conflict";
+}
+
 function isIsoDateTime(value: unknown): value is string {
   return isNonEmptyString(value) && !Number.isNaN(Date.parse(value));
 }
 
 export function isInspection(value: unknown): value is Inspection {
-  if (!value || typeof value !== "object") return false;
-
-  const inspection = value as Partial<Inspection>;
-  return (
-    isNonEmptyString(inspection.id) &&
-    isNonEmptyString(inspection.location) &&
-    isNonEmptyString(inspection.date) &&
-    isNonEmptyString(inspection.inspector) &&
-    (inspection.status === "ok" || inspection.status === "attention") &&
-    isNonEmptyString(inspection.statusLabel) &&
-    Number.isInteger(inspection.findings) &&
-    (inspection.findings as number) >= 0 &&
-    isNonEmptyString(inspection.summary)
-  );
+  return validateInspection(value).success;
 }
 
 export function isStoredInspection(value: unknown): value is StoredInspection {
-  if (!isInspection(value)) return false;
+  if (!isPlainObject(value) || !hasOwn(value, "sync")) return false;
 
-  const sync = (value as Partial<StoredInspection>).sync;
+  const { sync, ...inspection } = value;
+  if (!isInspection(inspection)) return false;
+  if (!isPlainObject(sync)) return false;
+  if (Object.keys(sync).some((field) => !SYNC_FIELDS.has(field))) return false;
+  if (!hasOwn(sync, "status") || !hasOwn(sync, "baseRevision")) return false;
+
   return Boolean(
-    sync &&
-      OPERATION_STATUSES.has(sync.status) &&
+    isOperationStatus(sync.status) &&
       isRevision(sync.baseRevision) &&
-      (sync.pendingOperationId === undefined || isNonEmptyString(sync.pendingOperationId)) &&
-      (sync.lastSyncedAt === undefined || isIsoDateTime(sync.lastSyncedAt))
+      (!hasOwn(sync, "pendingOperationId") || isNonEmptyString(sync.pendingOperationId)) &&
+      (!hasOwn(sync, "lastSyncedAt") || isIsoDateTime(sync.lastSyncedAt))
   );
 }
 

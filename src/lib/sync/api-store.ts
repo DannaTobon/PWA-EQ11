@@ -1,5 +1,5 @@
-import { isInspection } from "@/lib/storage/schema";
 import type { Inspection } from "@/lib/data/inspections";
+import { isPlainObject, validateInspectionMutation } from "@/lib/security";
 import { hasRevisionConflict } from "@/lib/sync/conflict-policy";
 
 /**
@@ -26,25 +26,25 @@ export function countServerRecords(): number {
 }
 
 export function applyMutation(input: unknown, idempotencyKey?: string | null): MutationResponse {
-  const m = input as Record<string, unknown> | null;
-  const valid =
-    m &&
-    typeof m.operationId === "string" &&
-    m.operationId.trim() !== "" &&
-    typeof m.entityId === "string" &&
-    (m.type === "create" || m.type === "update") &&
-    isInspection(m.payload) &&
-    m.payload.id === m.entityId &&
-    (m.baseRevision === null || (Number.isInteger(m.baseRevision) && (m.baseRevision as number) >= 0));
-  if (!valid) return { status: 400, body: { error: "Mutación inválida." } };
-  if (idempotencyKey && idempotencyKey !== m.operationId) {
+  if (!isPlainObject(input)) return { status: 400, body: { error: "Mutación inválida." } };
+
+  // El receptor interno también acepta un OutboxOperation completo. Proyectar los campos
+  // de transporte mantiene esa compatibilidad y aplica el mismo contrato centralizado.
+  const validation = validateInspectionMutation({
+    operationId: input.operationId,
+    entityId: input.entityId,
+    type: input.type,
+    payload: input.payload,
+    baseRevision: input.baseRevision
+  });
+  if (!validation.success) return { status: 400, body: { error: "Mutación inválida." } };
+
+  const mutation = validation.data;
+  if (idempotencyKey && idempotencyKey.trim() !== mutation.operationId) {
     return { status: 400, body: { error: "Idempotency-Key no coincide con operationId." } };
   }
 
-  const operationId = m.operationId as string;
-  const entityId = m.entityId as string;
-  const baseRevision = m.baseRevision as number | null;
-  const payload = m.payload as Inspection;
+  const { operationId, entityId, baseRevision, payload } = mutation;
 
   // Misma operación: mismo resultado, sin crear otro registro.
   const previous = processed.get(operationId);
