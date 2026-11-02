@@ -1373,3 +1373,64 @@ de Next.js 14.
 - Todos los fixtures y datos de inspección son sintéticos.
 - No se agregaron secretos, tokens, credenciales ni datos reales.
 - No se incluyeron respuestas del quiz.
+
+---
+
+## Semana 09 — Tonanzin
+
+### 1. Identificación
+
+- **Nombre:** Tonanzin
+- **Grupo:** 10°A
+- **Semana:** 09
+- **Rama:** `feature/w09-threats-ci-tonanzin`
+
+### 2. Commits
+
+- **Commit técnico:** `3152ad823a2d78fe2146ca14d5c686d778888f52`
+- **Commit de evidencia:** `COMPLETAR: SHA del commit que agrega esta evidencia`
+- **Pull Request:** `COMPLETAR: enlace al PR`
+- **Checks de GitHub Actions:** `COMPLETAR: enlace al run en verde`
+
+### 3. Aportación técnica
+
+- **`src/lib/security/redaction.ts`:** redacción de claves privadas, JWT, tokens con prefijo conocido, esquemas `Bearer`/`Basic`, campos sensibles, correos, fotos en base64 y coordenadas; `safeErrorMessage` (sin pila, acotado) y `describePayload` (forma sin valores). Exportado desde `src/lib/security/index.ts`.
+- **Integración de la redacción** en `lastError` de la outbox (`src/lib/sync/queue.ts`, `src/lib/sync/client.ts`), en los mensajes de error de `use-inspection-sync.ts` y `src/app/inspecciones/page.tsx`, y en el registro de `src/components/ui/error-state.tsx` (ya no imprime el objeto de error completo).
+- **`scripts/scan-secrets.mjs`:** escáner de credenciales de alta confianza; informa archivo, línea y categoría, nunca el valor. Integrado en `scripts/verify.mjs` como check `secrets` y expuesto como `npm run scan:secrets`.
+- **`docs/threat-model.md`:** modelo STRIDE con alcance, activos, actores, flujos, fronteras de confianza y 17 amenazas con control, prueba y riesgo residual.
+- **`.github/workflows/academic-evaluation.yml`:** adaptado a la Semana 09 (Node 20.19.6, `npm ci --ignore-scripts`, pruebas de seguridad, escáner y `npm run verify:full`).
+- **`tests/security.spec.ts`:** `COMPLETAR: número de pruebas nuevas según vitest` (bloque «redacción, escáner de credenciales y modelo de amenazas»).
+- **`tests/tsconfig.json`** y script `typecheck:tests`: el editor deja de marcar el error 2307 en `tests/`.
+- **Sección 19 de `README.md`** y esta evidencia.
+
+### 4. Decisión técnica
+
+El escáner busca patrones de credenciales de alta confianza (claves privadas, JWT completos y tokens con prefijos conocidos) y no palabras genéricas como `secret`, `password` o `token`. Así no produce falsos positivos con documentación, nombres de paquetes ni el lockfile, y sí detecta formatos que indican una credencial real.
+
+### 5. Pruebas ejecutadas
+
+`COMPLETAR con la salida real de tu equipo`:
+
+- `npx vitest run tests/security.spec.ts`: `COMPLETAR`
+- `npm run lint`: `COMPLETAR`
+- `npm run typecheck`: `COMPLETAR`
+- `npm run scan:secrets`: `COMPLETAR`
+- `npm run build`: `COMPLETAR`
+- `npm run verify` (o `make verify`): `COMPLETAR`
+- `npm run verify:full`: `COMPLETAR`
+
+### 6. Limitación o riesgo
+
+Un escáner basado en patrones no garantiza detectar todos los formatos posibles de credenciales y no analiza el historial de Git; debe complementarse con revisión humana. La redacción también depende de patrones y de nombres de campo. El check público `public-tests/check.sh` busca palabras genéricas y ya marca documentación y el lockfile legítimos; no se modificó.
+
+### 7. Uso declarado de IA
+
+- **Herramienta:** Claude (Anthropic).
+- **Propósito:** `COMPLETAR con lo que realmente usaste` (revisión del repositorio, borrador de `redaction.ts`, del escáner, del modelo de amenazas, de las pruebas, del workflow y de la documentación).
+- **Validación humana:** `COMPLETAR: qué revisaste y qué comandos ejecutaste tú misma`.
+
+### 8. Datos utilizados
+
+- Todos los fixtures se construyen en tiempo de ejecución con fragmentos sintéticos; ningún archivo versionado contiene una credencial completa.
+- No se agregaron secretos, tokens, credenciales ni datos reales.
+- No se incluyeron respuestas del quiz.
