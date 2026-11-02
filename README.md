@@ -324,3 +324,44 @@ npm run verify
 **Decisión técnica:** centralizar normalización y reglas del dominio sin agregar dependencias, y hacer que los validadores históricos deleguen al nuevo contrato para evitar reglas divergentes. Todos los casos y fixtures agregados usan datos exclusivamente sintéticos.
 
 **Límites:** esta validación no sustituye autenticación, autorización, rate limiting ni límites de transporte configurados por la infraestructura. Este es únicamente el bloque de validación de Danna; no declara completa la Semana 09 ni incluye el modelo de amenazas, el inventario de privacidad, CSP u otros bloques del equipo.
+
+---
+
+## 18. Semana 09 — Privacidad, encabezados y permisos (bloque de Fernando)
+
+Este bloque implementa la capa de protección perimetral, políticas defensivas de permisos, control estricto de indexación y minimización de datos para la aplicación de inspecciones:
+
+1. **Encabezados defensivos en `next.config.mjs`:**
+   - **Content Security Policy (CSP):** política compatible con Next.js 14 que restringe orígenes a `'self'`, deshabilita plugins y objetos (`object-src 'none'`), prohíbe el framing (`frame-ancestors 'none'`) y restringe la ejecución de scripts, estilos, fuentes, conexiones y trabajadores (`worker-src 'self'`).
+   - **Protección contra MIME sniffing:** `X-Content-Type-Options: nosniff`.
+   - **Protección contra framing / clickjacking:** `X-Frame-Options: DENY`.
+   - **Control de referencias:** `Referrer-Policy: strict-origin-when-cross-origin`.
+   - **Permissions-Policy:** deshabilita capacidades no utilizadas (`microphone=()`, `browsing-topics=()`, `payment=()`, `usb=()`) y restringe cámara y geolocalización exclusivamente al origen propio (`camera=(self)`, `geolocation=(self)`).
+
+2. **Control de indexación (`public/robots.txt`):**
+   - Configura una política estricta de no indexación (`User-agent: *`, `Disallow: /`) para evitar la exposición accidental de rutas y formularios internos del laboratorio a motores de búsqueda.
+
+3. **Minimización de datos y aislamiento de capacidades:**
+   - Las capacidades de hardware (cámara y geolocalización) son estrictamente optativas y requieren una acción deliberada del usuario (clic en botón). No se solicitan permisos automáticamente al cargar o montar componentes.
+   - La evidencia fotográfica y las coordenadas geográficas se almacenan en una base IndexedDB auxiliar independiente (`pwa-eq11-capabilities`), quedando **excluidas permanentemente del payload de la outbox y de la sincronización remota hacia la API**.
+   - La denegación o indisponibilidad de permisos de cámara o geolocalización nunca bloquea ni degrada el guardado principal de la inspección.
+
+4. **Operación centralizada de borrado local (`clearLocalApplicationData`):**
+   - Centraliza en `src/lib/security/privacy.ts` (exportado desde `src/lib/security/index.ts`) la eliminación verificable y atómica de:
+     - Base IndexedDB principal (`pwa-eq11-inspections`: inspecciones, outbox y syncMeta).
+     - Base IndexedDB auxiliar (`pwa-eq11-capabilities`: fotos y coordenadas).
+     - Cachés del Service Worker (`caches.delete`).
+     - Almacenamiento web del navegador (`localStorage.clear()`, `sessionStorage.clear()`).
+
+5. **Inventario de datos y privacidad (`docs/privacy-data-inventory.md`):**
+   - Documenta exhaustivamente las 9 categorías obligatorias: inspecciones, metadatos de sincronización, outbox, conflictos, foto opcional, coordenadas, estado de permisos, cachés de SW y reportes de CI, detallando finalidad, origen, almacenamiento, transmisión, retención, eliminación, riesgo y control de minimización.
+
+```bash
+npx vitest run tests/security.spec.ts
+npm run typecheck
+npm run build
+```
+
+**Decisión técnica:** las capacidades de hardware sensibles son opcionales, requieren acción explícita y sus datos auxiliares permanecen fuera de la sincronización automática.
+
+**Límites:** IndexedDB y CacheStorage no cifran la información en reposo dentro del perfil del navegador del cliente; no protegen contra una persona con acceso físico al dispositivo o acceso al perfil local del sistema operativo.

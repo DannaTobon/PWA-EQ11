@@ -11,3 +11,8 @@ export {
   type ValidationIssueCode,
   type ValidationResult
 } from "@/lib/security/validation";
+
+export {
+  clearLocalApplicationData,
+  type LocalDataPurgeReport
+} from "@/lib/security/privacy";

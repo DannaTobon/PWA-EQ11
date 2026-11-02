@@ -1,0 +1,6 @@
+# https://www.robotstxt.org/robotstxt.html
+# Aplicación interna para inspecciones y mantenimiento de laboratorios
+# Política de privacidad: no indexar contenido en motores de búsqueda
+
+User-agent: *
+Disallow: /
