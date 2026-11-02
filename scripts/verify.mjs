@@ -1,9 +1,10 @@
 import { existsSync, mkdirSync, readFileSync, writeFileSync } from "node:fs";
 import { resolve } from "node:path";
 import { spawnSync } from "node:child_process";
+import { formatFindings, scanRepository } from "./scan-secrets.mjs";
 
 const root = resolve(import.meta.dirname, "..");
-const required = ["package.json", "package-lock.json", "README.md", "src/app/layout.tsx", "src/app/page.tsx", "src/app/globals.css", "src/lib/data/inspections.ts", "docs/requirements.md", "docs/decision-record.md", "docs/cache-strategy.md", "tests/starter.spec.mjs", "tests/service-worker.spec.ts", "tests/offline.spec.ts", "public/sw.js", "src/lib/pwa/register-service-worker.ts", "evidence/individual.md", "src/app/inspecciones/page.tsx", "src/app/inspecciones/[id]/page.tsx", "src/app/api/inspecciones/route.ts", "tests/rendering.spec.tsx", "docs/rendering-decision.md", "src/lib/storage/schema.ts", "src/lib/storage/indexeddb.ts", "src/lib/sync/queue.ts", "src/lib/sync/conflict-policy.ts", "tests/storage.spec.ts", "tests/queue.spec.ts", "tests/sync.spec.ts", "docs/sync-policy.md", ".github/workflows/week-05-w05-sync-data.yml", "tests/unit/validation.spec.ts", "tests/unit/queue-rules.spec.ts", "tests/integration/offline-persistence.spec.ts", "tests/integration/duplicate-sync.spec.ts", "tests/e2e/offline-sync.spec.ts", "tests/e2e/capability-denied.spec.ts", "docs/test-strategy.md", ".github/workflows/academic-evaluation.yml", "playwright.config.ts", ".eslintrc.json"];
+const required = ["package.json", "package-lock.json", "README.md", "src/app/layout.tsx", "src/app/page.tsx", "src/app/globals.css", "src/lib/data/inspections.ts", "docs/requirements.md", "docs/decision-record.md", "docs/cache-strategy.md", "tests/starter.spec.mjs", "tests/service-worker.spec.ts", "tests/offline.spec.ts", "public/sw.js", "src/lib/pwa/register-service-worker.ts", "evidence/individual.md", "src/app/inspecciones/page.tsx", "src/app/inspecciones/[id]/page.tsx", "src/app/api/inspecciones/route.ts", "tests/rendering.spec.tsx", "docs/rendering-decision.md", "src/lib/storage/schema.ts", "src/lib/storage/indexeddb.ts", "src/lib/sync/queue.ts", "src/lib/sync/conflict-policy.ts", "tests/storage.spec.ts", "tests/queue.spec.ts", "tests/sync.spec.ts", "docs/sync-policy.md", ".github/workflows/week-05-w05-sync-data.yml", "tests/unit/validation.spec.ts", "tests/unit/queue-rules.spec.ts", "tests/integration/offline-persistence.spec.ts", "tests/integration/duplicate-sync.spec.ts", "tests/e2e/offline-sync.spec.ts", "tests/e2e/capability-denied.spec.ts", "docs/test-strategy.md", ".github/workflows/academic-evaluation.yml", "playwright.config.ts", ".eslintrc.json", "docs/threat-model.md", "docs/privacy-data-inventory.md", "src/lib/security/validation.ts", "src/lib/security/privacy.ts", "src/lib/security/redaction.ts", "scripts/scan-secrets.mjs", "tests/security.spec.ts", "public/robots.txt"];
 const missing = required.filter(file => !existsSync(resolve(root, file)));
 const structureOnly = process.argv.includes("--structure");
 if (structureOnly) {
@@ -11,6 +12,12 @@ if (structureOnly) {
   process.exit(missing.length ? 1 : 0);
 }
 const checks = [{ id: "structure", status: missing.length ? "fail" : "pass", missing }];
+const secretScan = scanRepository(root);
+checks.push({ id: "secrets", status: secretScan.findings.length ? "fail" : "pass", scannedFiles: secretScan.scannedFiles, findings: secretScan.findings });
+if (secretScan.findings.length) {
+  console.error("\nEscáner de credenciales: hallazgos de alta confianza (el valor nunca se imprime).");
+  console.error(formatFindings(secretScan.findings));
+}
 const npm = process.platform === "win32" ? "npm.cmd" : "npm";
 const steps = [
   ["lint", ["run", "lint"]],
@@ -41,7 +48,7 @@ const result = {
   status: checks.every(c => c.status === "pass") ? "pass" : "fail",
   checks,
   academicReview: { status: "pending", message: "Sin calificación automática. Revisar requisitos, decisión y evidencia por integrante con la rúbrica; existencia no implica calidad.", documents },
-  limits: ["La instalación se verifica mediante npm ci por separado.", "No certifica ausencia de secretos.", "Las pruebas proporcionadas no cubren toda la aplicación.", "verify no ejecuta las pruebas E2E; verify:full sí las ejecuta y requiere Chromium instalado.", "La cobertura de Vitest no mide E2E ni código que solo se ejecuta en el navegador."]
+  limits: ["La instalación se verifica mediante npm ci por separado.", "El escáner de credenciales (scripts/scan-secrets.mjs) solo detecta patrones de alta confianza; no certifica la ausencia de secretos y debe complementarse con revisión humana.", "Las pruebas proporcionadas no cubren toda la aplicación.", "verify no ejecuta las pruebas E2E; verify:full sí las ejecuta y requiere Chromium instalado.", "La cobertura de Vitest no mide E2E ni código que solo se ejecuta en el navegador."]
 };
 mkdirSync(resolve(root, "reports"), { recursive: true });
 writeFileSync(resolve(root, "reports/verification.json"), JSON.stringify(result, null, 2) + "\n");

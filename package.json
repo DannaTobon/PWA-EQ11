@@ -16,6 +16,8 @@
     "test:coverage": "vitest run --coverage --reporter=default --reporter=json --outputFile=vitest-report.json",
     "test:manifest": "vitest run --reporter=default --reporter=json --outputFile=vitest-report.json",
     "test:all": "npm test && npm run test:manifest",
+    "scan:secrets": "node scripts/scan-secrets.mjs",
+    "typecheck:tests": "tsc --noEmit -p tests/tsconfig.json",
     "verify": "node scripts/verify.mjs",
     "verify:full": "npm run verify && npm run test:e2e"
   },
