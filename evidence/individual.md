@@ -1298,3 +1298,78 @@ mediante grafemas Unicode visibles.
 - Todos los fixtures y datos de inspección son sintéticos.
 - No se agregaron secretos, tokens, credenciales ni datos reales.
 - No se incluyeron respuestas del quiz.
+
+---
+
+## Semana 09 — Fernando
+
+### 1. Identificación
+
+- **Nombre:** Fernando
+- **Grupo:** 10°A
+- **Semana:** 09
+- **Rama:** `feature/w09-privacy-fernando`
+
+### 2. Commits
+
+- **Commit técnico:** `45eea5b`
+
+### 3. Aportación técnica
+
+Implementé la capa de privacidad, encabezados defensivos y políticas de permisos de la aplicación:
+
+- **Encabezados defensivos en `next.config.mjs`:** CSP compatible con Next.js 14
+  (`default-src 'self'`, `frame-ancestors 'none'`, `object-src 'none'`, `worker-src 'self'`),
+  `X-Content-Type-Options: nosniff`, `X-Frame-Options: DENY`,
+  `Referrer-Policy: strict-origin-when-cross-origin` y `Permissions-Policy` restrictiva.
+- **`public/robots.txt`:** política estricta de no indexación (`Disallow: /`).
+- **`src/lib/security/privacy.ts`:** operación centralizada y verificable de eliminación de
+  todos los datos locales (IndexedDB principal, IndexedDB de capacidades, cachés de SW,
+  localStorage y sessionStorage).
+- **`docs/privacy-data-inventory.md`:** inventario exhaustivo de las 9 categorías de datos
+  con finalidad, origen, almacenamiento, transmisión, retención, eliminación, riesgo y control.
+- **7 pruebas nuevas en `tests/security.spec.ts`:** encabezados defensivos, Permissions-Policy,
+  robots.txt, no solicitud automática de permisos, guardado sin capacidades, rechazo de datos
+  auxiliares en outbox y purga verificable completa.
+- **Sección 18 en `README.md`:** documentación del bloque de privacidad.
+
+### 4. Decisión técnica
+
+Las capacidades de hardware sensibles (cámara y geolocalización) son opcionales, requieren una
+acción explícita del usuario y sus datos auxiliares se almacenan en una base IndexedDB
+independiente (`pwa-eq11-capabilities`), quedando excluidos permanentemente del payload de la
+outbox y de la sincronización remota hacia la API. Esto minimiza la superficie de ataque: si la
+comunicación sufriera una interceptación, no se filtrarán fotografías ni coordenadas.
+
+### 5. Pruebas ejecutadas
+
+- `npx vitest run tests/security.spec.ts`: **49/49 pruebas aprobadas** (42 de Danna + 7 nuevas).
+- `npm run typecheck`: exit 0.
+- `npm run build`: exit 0, 9 páginas generadas, lint con una sola advertencia heredada
+  (`<img>` en `CameraEvidenceControl.tsx`).
+
+### 6. Limitación o riesgo
+
+IndexedDB y CacheStorage no cifran la información en reposo dentro del perfil del navegador del
+cliente. No protegen contra una persona con acceso físico al dispositivo o acceso al perfil local
+del sistema operativo. Además, la CSP inicial utiliza `'unsafe-inline'` y `'unsafe-eval'` en
+`script-src` como riesgo residual documentado para mantener la compatibilidad con la hidratación
+de Next.js 14.
+
+### 7. Uso declarado de IA
+
+- **Herramienta:** Antigravity IDE (Claude).
+- **Propósito:** análisis de la estructura del proyecto, implementación de encabezados
+  defensivos, creación de `privacy.ts`, generación del inventario de datos, redacción de
+  pruebas y actualización de README.
+- **Validación humana:** revisión de cada archivo generado, ejecución local de `vitest`,
+  `typecheck` y `build`, y comprobación de que las 49 pruebas pasan en verde antes de
+  publicar la rama.
+- **Responsabilidad:** el integrante revisó los resultados, mantuvo el alcance asignado y no
+  aceptó la publicación sin confirmar la compatibilidad de la CSP con el build de Next.js.
+
+### 8. Datos utilizados
+
+- Todos los fixtures y datos de inspección son sintéticos.
+- No se agregaron secretos, tokens, credenciales ni datos reales.
+- No se incluyeron respuestas del quiz.
