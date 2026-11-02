@@ -1,6 +1,6 @@
-# Workflow académico de Semana 08. Es retroalimentación formativa; la
+# Workflow académico de Semana 09. Es retroalimentación formativa; la
 # calificación final usa el commit fijado y los checks privados del docente.
-name: Academic Evaluation — Week 08
+name: Academic Evaluation — Week 09
 on:
   push:
   pull_request:
@@ -20,31 +20,24 @@ jobs:
       - name: Setup Node
         uses: actions/setup-node@v4
         with:
+          # Misma versión que .nvmrc: el proyecto fija Node 20.19.6.
           node-version: "20.19.6"
           cache: npm
-      - name: Install dependencies
-        run: npm ci --no-audit --no-fund
-      - name: Lint
-        run: npm run lint
-      - name: Typecheck
-        run: npm run typecheck
-      - name: Unit tests
-        run: npm run test:unit
-      - name: Integration tests
-        run: npm run test:integration
-      - name: Coverage report
-        run: npm run test:coverage
-      - name: Build
-        run: npm run build
+      - name: Install dependencies (instalación limpia)
+        run: npm ci --ignore-scripts --no-audit --no-fund
+      - name: Security tests
+        run: npx vitest run tests/security.spec.ts
+      - name: Credential scan
+        run: npm run scan:secrets
       - name: Install Playwright Chromium
         run: npx playwright install --with-deps chromium
-      - name: E2E
-        run: npm run test:e2e
+      - name: Full verification (lint, typecheck, tests, coverage, build, secrets, E2E)
+        run: npm run verify:full
       - name: Upload reports
         if: always()
         uses: actions/upload-artifact@v4
         with:
-          name: academic-evidence-w08-${{ github.run_id }}
+          name: academic-evidence-w09-${{ github.run_id }}
           if-no-files-found: warn
           retention-days: 14
           path: |
