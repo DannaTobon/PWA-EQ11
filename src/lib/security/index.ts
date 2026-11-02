@@ -16,3 +16,13 @@ export {
   clearLocalApplicationData,
   type LocalDataPurgeReport
 } from "@/lib/security/privacy";
+
+export {
+  MAX_SAFE_MESSAGE_LENGTH,
+  REDACTED,
+  describePayload,
+  redactSensitiveText,
+  redactSensitiveValue,
+  safeErrorMessage,
+  type PayloadSummary
+} from "@/lib/security/redaction";

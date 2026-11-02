@@ -365,3 +365,39 @@ npm run build
 **Decisión técnica:** las capacidades de hardware sensibles son opcionales, requieren acción explícita y sus datos auxiliares permanecen fuera de la sincronización automática.
 
 **Límites:** IndexedDB y CacheStorage no cifran la información en reposo dentro del perfil del navegador del cliente; no protegen contra una persona con acceso físico al dispositivo o acceso al perfil local del sistema operativo.
+
+## 19. Semana 09 — Amenazas, redacción y CI (bloque de Tonanzin)
+
+Este bloque agrega la capa de detección y documentación de riesgos sobre los bloques de validación (Danna) y de privacidad (Fernando):
+
+- **Redacción** (`src/lib/security/redaction.ts`, exportada desde `src/lib/security/index.ts`): `redactSensitiveText`, `redactSensitiveValue`, `safeErrorMessage` y `describePayload`. Reemplazan claves privadas, JWT, tokens con prefijos conocidos, esquemas `Bearer`/`Basic`, campos con nombres sensibles (`clave=valor`, JSON), correos, fotos en base64 y coordenadas. `safeErrorMessage` solo usa el `message` de un error, lo acota a 300 caracteres y nunca copia la pila. Se aplica al guardar `lastError` en la outbox (`src/lib/sync/queue.ts`, `src/lib/sync/client.ts`), al mostrar errores de sincronización y de captura, y al registrar en `src/components/ui/error-state.tsx`. `describePayload` describe la forma de un payload (tipo y nombres de propiedades) sin incluir valores, para registrar sin imprimir payloads completos.
+- **Escáner de credenciales** (`scripts/scan-secrets.mjs`): busca solo patrones de alta confianza (claves privadas PEM, JWT completos y tokens con prefijos de GitHub, AWS, Slack, Google, npm, GitLab, Stripe y claves `sk-`). No busca palabras genéricas como `secret`, `password` o `token`. Informa únicamente archivo, línea y categoría; el valor siempre aparece como `[REDACTED]`. Analiza los archivos versionados (`git ls-files`) o, sin Git, el árbol de trabajo sin carpetas generadas, y está integrado en `scripts/verify.mjs` como check `secrets` (se guarda en `reports/verification.json`).
+- **Modelo de amenazas** (`docs/threat-model.md`): STRIDE con alcance, activos, actores, flujos, fronteras de confianza y 17 amenazas priorizadas por impacto × probabilidad. Cada fila enlaza un control y una prueba con su título exacto, y una prueba comprueba que esas referencias existan.
+- **CI** (`.github/workflows/academic-evaluation.yml`, adaptado a la Semana 09): Node 20.19.6 (igual que `.nvmrc`), `npm ci --ignore-scripts --no-audit --no-fund`, pruebas de seguridad, escáner de credenciales, instalación de Chromium y `npm run verify:full`; sube `reports/verification.json` y los reportes de pruebas como artefactos.
+- **Typecheck de pruebas en el editor** (`tests/tsconfig.json`): `tsconfig.json` solo incluye `src/`, por eso el editor no aplicaba el alias `@/` a `tests/` y marcaba el error 2307. `npm run typecheck:tests` comprueba los tipos de las pruebas; no forma parte de `npm run verify`.
+
+### Verificación
+
+```bash
+npm ci --ignore-scripts --no-audit --no-fund
+npm run lint
+npm run typecheck
+npx vitest run tests/security.spec.ts
+npm run scan:secrets
+npm run build
+npm run verify
+```
+
+En Windows sin `make`, el equivalente documentado es:
+
+```powershell
+npm ci --ignore-scripts --no-audit --no-fund
+npm run verify
+npm run verify:full
+```
+
+Para comprobar encabezados y `robots.txt` sobre el build de producción: `npm run build`, `npm start`, `curl -I http://127.0.0.1:3000/` y `curl http://127.0.0.1:3000/robots.txt`.
+
+**Decisión técnica:** el escáner usa patrones de credenciales de alta confianza y no palabras genéricas, para reducir falsos positivos con documentación, nombres de paquetes y el lockfile sin ocultar riesgos reales.
+
+**Límites:** un escáner basado en patrones no garantiza detectar todos los formatos de credenciales y no analiza el historial de Git; debe complementarse con revisión humana. La redacción también es por patrones y nombres de campo. El check público `public-tests/check.sh` busca palabras genéricas (`secret`, `password`, `token`) y ya marca documentación y el lockfile legítimos; no se modificó, y su salida se conserva sin cambios hasta recibir indicación docente. La autenticación, la autorización y el rate limiting siguen fuera de alcance (ver `docs/threat-model.md`, T-09 y T-17).

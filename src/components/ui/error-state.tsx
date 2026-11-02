@@ -1,6 +1,7 @@
 "use client";
 
 import { useEffect } from "react";
+import { safeErrorMessage } from "@/lib/security/redaction";
 
 interface ErrorStateProps {
   error: Error & { digest?: string };
@@ -9,8 +10,8 @@ interface ErrorStateProps {
 
 export function ErrorState({ error, reset }: ErrorStateProps) {
   useEffect(() => {
-    // Aquí se podría loggear el error a un servicio externo
-    console.error("Error capturado por ErrorState:", error);
+    // Se registra solo un mensaje redactado: nunca el objeto completo, su pila ni sus datos.
+    console.error("Error capturado por ErrorState:", safeErrorMessage(error), error.digest ?? "");
   }, [error]);
 
   return (

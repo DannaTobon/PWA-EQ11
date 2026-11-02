@@ -3,6 +3,7 @@
 import { useCallback, useEffect, useRef, useState } from "react";
 import { getAllInspections, getAllOutboxOperations } from "@/lib/storage/indexeddb";
 import type { OutboxOperation, StoredInspection } from "@/lib/storage/schema";
+import { safeErrorMessage } from "@/lib/security/redaction";
 import { createHttpSender } from "@/lib/sync/client";
 import {
   listConflicts,
@@ -13,7 +14,7 @@ import {
 import { getPendingOperations, processQueue, retryFailedOperation } from "@/lib/sync/queue";
 
 function messageFrom(error: unknown): string {
-  return error instanceof Error ? error.message : "Ha ocurrido un error de sincronización.";
+  return safeErrorMessage(error, "Ha ocurrido un error de sincronización.");
 }
 
 /** Conecta la cola persistente con el ciclo de vida de la pantalla de inspecciones. */

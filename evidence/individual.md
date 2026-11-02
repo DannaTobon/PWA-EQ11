@@ -1373,3 +1373,72 @@ de Next.js 14.
 - Todos los fixtures y datos de inspección son sintéticos.
 - No se agregaron secretos, tokens, credenciales ni datos reales.
 - No se incluyeron respuestas del quiz.
+
+---
+
+## Semana 09 — Tonanzin
+
+### 1. Identificación
+
+- **Nombre:** Tonanzin
+- **Grupo:** 10°A
+- **Semana:** 09
+- **Rama:** `feature/w09-threats-ci-tonanzin`
+
+### 2. Commits
+
+- **Commit técnico:** `3152ad823a2d78fe2146ca14d5c686d778888f52`
+- **Commit de evidencia:** `6002f40526da6bbd9db379cfdc76e32d95939d5a`, `3dafc36aef6eac55b80f2ac7746ab9ac415aba88`, `b4a1c6a2bb2076b5d2284669e4d02447a1ecb6df`,
+`79513f4c4c5c33be5c640b650c270768be54ac0b`
+- **Pull Request:** `https://github.com/DannaTobon/PWA-EQ11/pull/22`
+- **Checks de GitHub Actions:** `https://github.com/DannaTobon/PWA-EQ11/actions/runs/41407096482`
+
+### 3. Aportación técnica
+
+- **`src/lib/security/redaction.ts`:** redacción de claves privadas, JWT, tokens con prefijo conocido, esquemas `Bearer`/`Basic`, campos sensibles, correos, fotos en base64 y coordenadas; `safeErrorMessage` (sin pila, acotado) y `describePayload` (forma sin valores). Exportado desde `src/lib/security/index.ts`.
+- **Integración de la redacción** en `lastError` de la outbox (`src/lib/sync/queue.ts`, `src/lib/sync/client.ts`), en los mensajes de error de `use-inspection-sync.ts` y `src/app/inspecciones/page.tsx`, y en el registro de `src/components/ui/error-state.tsx` (ya no imprime el objeto de error completo).
+- **`scripts/scan-secrets.mjs`:** escáner de credenciales de alta confianza; informa archivo, línea y categoría, nunca el valor. Integrado en `scripts/verify.mjs` como check `secrets` y expuesto como `npm run scan:secrets`.
+- **`docs/threat-model.md`:** modelo STRIDE con alcance, activos, actores, flujos, fronteras de confianza y 17 amenazas con control, prueba y riesgo residual.
+- **`.github/workflows/academic-evaluation.yml`:** adaptado a la Semana 09 (Node 20.19.6, `npm ci --ignore-scripts`, pruebas de seguridad, escáner y `npm run verify:full`).
+- **`tests/security.spec.ts`:** `COMPLETAR: número de pruebas nuevas según vitest` (bloque «redacción, escáner de credenciales y modelo de amenazas»).
+- **`tests/tsconfig.json`** y script `typecheck:tests`: el editor deja de marcar el error 2307 en `tests/`.
+- **Sección 19 de `README.md`** y esta evidencia.
+
+### 4. Decisión técnica
+
+El escáner busca patrones de credenciales de alta confianza (claves privadas, JWT completos y tokens con prefijos conocidos) y no palabras genéricas como `secret`, `password` o `token`. Así no produce falsos positivos con documentación, nombres de paquetes ni el lockfile, y sí detecta formatos que indican una credencial real.
+
+### 5. Pruebas ejecutadas
+
+`COMPLETAR con la salida real de tu equipo`:
+
+- `npx vitest run tests/security.spec.ts`: Se realizaron pruebas con el comando npx vitest run test/security.spec.ts y se completaron 67 pruebas en verde
+- `npm run lint`: Durante la ejecución de npm run verify, se identificó una advertencia en el archivo src/components/device/CameraEvidenceControl.tsx, específicamente en la línea 195.
+
+La advertencia corresponde a la regla @next/next/no-img-element, que señala que el uso del elemento HTML <img> puede afectar el rendimiento de carga de imágenes, incrementar el tiempo de Largest Contentful Paint (LCP) y generar un mayor consumo de ancho de banda.
+- `npm run typecheck`: Se ejecutó el comando npm run typecheck, el cual utiliza el compilador de TypeScript (tsc --noEmit) para comprobar la consistencia de los tipos en el proyecto.
+La ejecución finalizó sin mostrar errores, por lo que se considera que la verificación de tipos fue satisfactoria. El parámetro --noEmit permite realizar esta comprobación sin generar archivos JavaScript adicionales.
+- `npm run scan:secrets`: Escáner de credenciales: sin hallazgos de alta confianza en 108 archivos.
+- `npm run build`: Test completado 9/9
+- `npm run verify` (o `make verify`): La verificación técnica finalizó satisfactoriamente. Se obtuvieron 303 pruebas aprobadas con Vitest y 2 pruebas aprobadas con Playwright. Además, se registraron 3 pruebas pendientes (todo) y una cobertura aproximada del 80.4%.
+
+Se identificó una advertencia de ESLint relacionada con el uso del elemento <img>, la cual no impidió la ejecución satisfactoria del proceso.
+- `npm run verify:full`: La verificación.
+
+Resultado final: Verificación técnica aprobada (pass). La revisión académica quedó pendiente.
+
+### 6. Limitación o riesgo
+
+Un escáner basado en patrones no garantiza detectar todos los formatos posibles de credenciales y no analiza el historial de Git; debe complementarse con revisión humana. La redacción también depende de patrones y de nombres de campo. El check público `public-tests/check.sh` busca palabras genéricas y ya marca documentación y el lockfile legítimos; no se modificó.
+
+### 7. Uso declarado de IA
+
+- **Herramienta:** Claude (Anthropic).
+- **Propósito:** `COMPLETAR con lo que realmente usaste` (revisión del repositorio, borrador de `redaction.ts`, del escáner, del modelo de amenazas, de las pruebas, del workflow y de la documentación).
+- **Validación humana:** `COMPLETAR: qué revisaste y qué comandos ejecutaste tú misma`.
+
+### 8. Datos utilizados
+
+- Todos los fixtures se construyen en tiempo de ejecución con fragmentos sintéticos; ningún archivo versionado contiene una credencial completa.
+- No se agregaron secretos, tokens, credenciales ni datos reales.
+- No se incluyeron respuestas del quiz.
