@@ -11,7 +11,7 @@ import type { OutboxOperation, StoredInspection } from "@/lib/storage/schema";
 import { useInspectionSync } from "@/lib/sync/use-inspection-sync";
 import { NotificationControl } from "@/components/device/NotificationControl";
 import { showLocalNotification } from "@/lib/notifications/client";
-import { INSPECTION_LIMITS, validateInspection } from "@/lib/security";
+import { INSPECTION_LIMITS, safeErrorMessage, validateInspection } from "@/lib/security";
 
 type CaptureForm = {
   location: string;
@@ -32,7 +32,7 @@ const INITIAL_FORM: CaptureForm = {
 };
 
 function errorMessage(error: unknown): string {
-  return error instanceof Error ? error.message : "Ha ocurrido un error inesperado.";
+  return safeErrorMessage(error, "Ha ocurrido un error inesperado.");
 }
 
 function newIdentifier(prefix: string): string {

@@ -8,6 +8,7 @@ import {
 } from "@/lib/storage/indexeddb";
 import { assertOutboxOperation, type OutboxOperation } from "@/lib/storage/schema";
 import { registerConflict, selectRunnableOperations } from "@/lib/sync/conflict-policy";
+import { safeErrorMessage } from "@/lib/security/redaction";
 import type { SendFn } from "@/lib/sync/client";
 
 /** Configuración académica: tres reintentos automáticos tras el primer envío, con espera de 1, 2 y 4 s. */
@@ -121,7 +122,7 @@ export async function processQueue(options: QueueOptions): Promise<QueueSummary>
     try {
       result = await send({ ...next, status: "inFlight", attempts });
     } catch (error) {
-      result = { kind: "retryable" as const, error: error instanceof Error ? error.message : "Error de red" };
+      result = { kind: "retryable" as const, error: safeErrorMessage(error, "Error de red") };
     }
 
     if (result.kind === "ok") {

@@ -1,6 +1,7 @@
 import type { OutboxOperation } from "@/lib/storage/schema";
 import type { Inspection } from "@/lib/data/inspections";
 import type { ServerSnapshot } from "@/lib/sync/conflict-policy";
+import { safeErrorMessage } from "@/lib/security/redaction";
 
 export type SendResult =
   | { kind: "ok"; revision: number; inspection: Inspection }
@@ -35,7 +36,7 @@ export function createHttpSender(fetchImpl: typeof fetch = (...args) => fetch(..
         })
       });
     } catch (error) {
-      return { kind: "retryable", error: error instanceof Error ? error.message : "Error de red" };
+      return { kind: "retryable", error: safeErrorMessage(error, "Error de red") };
     }
 
     const kind = classifyHttpStatus(response.status);
